@@ -1,12 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using PostSharp.Aspects;
 
 namespace Celeste.Mod.AudioSplitter.Utility
 {

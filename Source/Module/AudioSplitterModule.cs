@@ -37,45 +37,30 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public override void Load()
         {
-            // Wrap EventInstance/EventDescription callbacks to know when instances
-            // from original Audio are destroyed
-            //
-            // Note that we want to hook this before AudioDuplicate makes its EventInstance.setCallback hook
-            // because otherwise we'll set the wrapped callback to the duplicate instances
-            // setCallback call -> AudioDuplicate hook -> ASM Hook -(wrapped callback)-> original
-            On.FMOD.Studio.EventInstance.setCallback += WrapEventInstanceCallback;
-            On.FMOD.Studio.EventDescription.setCallback += WrapEventDescriptionCallback;
+            On.Celeste.Audio.Unload += OnAudioUnload;
+            InstanceDuplicatorHooks.Apply();
 
-            On.Celeste.Audio.Init += (On.Celeste.Audio.orig_Init orig) =>
+            On.Celeste.Audio.Init += static (On.Celeste.Audio.orig_Init orig) =>
             {
                 orig();
+                
+                // TODO: THIS ISN'T RIGHT, ADD CALLBACK IMMEDIATELY AFTER LOADING BANKS
 
                 // Apply an empty callback to all loaded EventDescriptions
                 // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
-                EVENT_CALLBACK emptyCallback = (type, eventInstance, parameters) =>
-                {
-                    return RESULT.OK;
-                };
+                EVENT_CALLBACK emptyCallback = static (type, eventInstance, parameters) => RESULT.OK;
 
                 foreach (Guid guid in global::Celeste.Audio.cachedPaths.Keys)
                 {
                     global::Celeste.Audio.System.getEventByID(guid, out EventDescription description);
                     description.setCallback(emptyCallback, 0);
                 }
-
-                if (Settings.EnableOnStartup)
-                {
-                    audioDuplicate.Initialize();
-                }
-            }
-
-            On.Celeste.Audio.Unload += OnAudioUnload;
+            };
         }
 
         public override void Unload()
         {
-            On.FMOD.Studio.EventInstance.setCallback -= WrapEventInstanceCallback;
-            On.FMOD.Studio.EventDescription.setCallback -= WrapEventDescriptionCallback;
+            InstanceDuplicatorHooks.Remove();
         }
 
         public override void LoadContent(bool firstLoad)
@@ -84,25 +69,11 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             if (!firstLoad)
                 return;
-        }
 
-        /// <see cref="AudioDuplicator.WrapEventCallback">
-        private RESULT WrapEventInstanceCallback(
-            On.FMOD.Studio.EventInstance.orig_setCallback setCallback,
-            EventInstance eventInstance, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
-        )
-        {
-            (callback, callbackmask) = audioDuplicate.WrapEventCallback(callback, callbackmask);
-            return setCallback(eventInstance, callback, callbackmask);
-        }
-
-        private RESULT WrapEventDescriptionCallback(
-            On.FMOD.Studio.EventDescription.orig_setCallback setCallback,
-            EventDescription eventDescription, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
-        )
-        {
-            (callback, callbackmask) = audioDuplicate.WrapEventCallback(callback, callbackmask);
-            return setCallback(eventDescription, callback, callbackmask);
+            if (Settings.EnableOnStartup)
+            {
+                audioDuplicate.Initialize();
+            }
         }
 
         private void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)

@@ -12,9 +12,10 @@ using CelesteAudio = global::Celeste.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Audio
 {
-    public class InstanceDuplicater
+    public class InstanceDuplicator
     {
-        public static List<InstanceDuplicater> activeDuplicaters { get; private set; } = new();
+        public static List<InstanceDuplicator> Instances { get; private set; } = new();
+        public static List<InstanceDuplicator> ActiveDuplicaters { get => Instances.Where(x => x.IsActive).ToList(); }
 
         private FMOD.Studio.System system;
 
@@ -22,23 +23,39 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private Dictionary<IntPtr, EventInstance> duplicateInstances = new();
 
-        public InstanceDuplicater(FMOD.Studio.System system) 
+        public InstanceDuplicator(FMOD.Studio.System system) 
         {
             this.system = system;
+            Instances.Add(this);
+        }
+
+        ~InstanceDuplicator()
+        {
+            Instances.Remove(this);
         }
 
         public void Activate()
         {
             IsActive = true;
-            activeDuplicaters.Add(this);
         }
 
         public void Deactivate()
         {
-            activeDuplicaters.Remove(this);
             IsActive = false;
         }
+
+        public void Clear() => duplicateInstances.Clear();
         
+        public EventInstance GetDuplicate(EventInstance origInst)
+        {
+            return GetDuplicate(origInst.getRaw());
+        }
+
+        public EventInstance GetDuplicate(IntPtr origInstPtr)
+        {
+            return duplicateInstances.TryGetValue(origInstPtr, out EventInstance inst) ? inst : null;
+        }
+
         public RESULT DuplicateInstance(Guid origDescGuid, IntPtr origInstPtr)
         {
             RESULT result;
@@ -56,16 +73,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 $"Created instance {AudioExtensions.GetEventPath(origDescGuid)}, orig={origInstPtr}, duplicate={duplicateInst.getRaw()}");
 
             return result;
-        }
-
-        public EventInstance GetDuplicate(EventInstance origInst)
-        {
-            return GetDuplicate(origInst.getRaw());
-        }
-
-        public EventInstance GetDuplicate(IntPtr origInstPtr)
-        {
-            return duplicateInstances.TryGetValue(origInstPtr, out EventInstance inst) ? inst : null;
         }
 
         private RESULT CreateInstance(Guid id, out EventInstance duplicate)

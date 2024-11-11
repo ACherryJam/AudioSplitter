@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Xml.Linq;
-using Celeste;
-using Celeste.Mod.AudioSplitter.Module;
-using Celeste.Mod.AudioSplitter.Utility;
+﻿using Celeste.Mod.AudioSplitter.Utility;
 using Celeste.Mod.Core;
 using FMOD;
 using FMOD.Studio;
 using Microsoft.Xna.Framework;
-using Monocle;
-using CelesteAudio = global::Celeste.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Audio
 {
@@ -30,9 +22,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
         private FMOD.Studio.System system;
         private FMOD.System lowLevelSystem;
 
-
         private BankLoader bankLoader = null;
         private EventCache eventCache = null;
+        private InstanceDuplicator instanceDuplicator = null;
 
         private RecursionLocker locker = new();
 
@@ -54,12 +46,17 @@ namespace Celeste.Mod.AudioSplitter.Audio
             bankLoader.LoadBanks();
 
             eventCache = new(system);
+            On.Celeste.Audio.GetEventDescription += OnAudioGetEventDescription;
+            On.Celeste.Audio.ReleaseUnusedDescriptions += OnAudioReleaseUnusedDescriptions;
 
-            AddHooks();
+            instanceDuplicator = new(system);
+            instanceDuplicator.Activate();
+
+            ApplyHooks();
         }
 
         /// <summary>
-        /// Unload the audio data and remove the hooks. Duh.
+        /// Unload the audio data and remove the hooks
         /// </summary>
         public void Terminate()
         {
@@ -67,6 +64,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return;
 
             bankLoader.UnloadBanks();
+
+            On.Celeste.Audio.GetEventDescription -= OnAudioGetEventDescription;
+            On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
+            eventCache.Clear();
+
+            instanceDuplicator.Deactivate();
+            instanceDuplicator.Clear();
+
             RemoveHooks();
         }
 
@@ -78,38 +83,24 @@ namespace Celeste.Mod.AudioSplitter.Audio
             }
         }
 
-        public static void ApplyHooks()
+        public void ApplyHooks()
         {
-            #region [Celeste hooks addition]
             On.Celeste.Audio.Update += OnAudioUpdate;
             On.Celeste.Audio.BusMuted += OnAudioBusMuted;
             On.Celeste.Audio.BusPaused += OnAudioBusPaused;
             On.Celeste.Audio.BusStopAll += OnAudioBusStopAll;
             On.Celeste.Audio.SetListenerPosition += OnAudioSetListenerPosition;
-            On.Celeste.Audio.GetEventDescription += OnAudioGetEventDescription;
-            On.Celeste.Audio.ReleaseUnusedDescriptions += OnAudioReleaseUnusedDescriptions;
-            On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
-            #endregion [Celeste hooks addition]
-
         }
 
 
         public void RemoveHooks()
         {
-            #region [Celeste hooks removal]
             On.Celeste.Audio.Update -= OnAudioUpdate;
             On.Celeste.Audio.BusMuted -= OnAudioBusMuted;
             On.Celeste.Audio.BusPaused -= OnAudioBusPaused;
             On.Celeste.Audio.BusStopAll -= OnAudioBusStopAll;
             On.Celeste.Audio.SetListenerPosition -= OnAudioSetListenerPosition;
-            On.Celeste.Audio.GetEventDescription -= OnAudioGetEventDescription;
-            On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
-            On.Celeste.Audio.Banks.Load -= OnAudioBanksLoad;
-            #endregion [Celeste hooks removal]
-
         }
-
-        #region [Celeste.Audio hooks]
 
         private void OnAudioUpdate(On.Celeste.Audio.orig_Update origUpdate)
         {
@@ -162,25 +153,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private EventDescription OnAudioGetEventDescription(On.Celeste.Audio.orig_GetEventDescription orig, string path)
         {
-            LoadEventDescription(path);
+            eventCache.LoadEventDescription(path);
             return orig(path);
         }
 
         private void OnAudioReleaseUnusedDescriptions(On.Celeste.Audio.orig_ReleaseUnusedDescriptions orig)
         {
             if (CoreModule.Settings.UnloadUnusedAudio)
-                ReleaseUnusedDescriptions();
+                eventCache.ReleaseUnusedDescriptions();
             orig();
         }
-
-        private Bank OnAudioBanksLoad(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
-        {
-            if (loadStrings)
-                banksWithloadedStrings.Add(name);
-
-            return orig(name, loadStrings);
-        }
-        #endregion [Celeste.Audio hooks]
-
     }
 }

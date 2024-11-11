@@ -80,5 +80,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 cachedEventDescriptions.Remove(text);
             }
         }
+
+        public void Clear() => cachedEventDescriptions.Clear();
     }
 }
