@@ -175,7 +175,8 @@ namespace Celeste.Mod.AudioSplitter.UI
             {
                 this.Parent = dropdownMenu;
 
-                OnPressed += () => {
+                OnPressed += () =>
+                {
                     this.Parent.SetOption(Option);
                     this.Parent.Exit();
                 };

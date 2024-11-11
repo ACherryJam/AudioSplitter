@@ -14,7 +14,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 {
     public class BankLoader
     {
-        static private HashSet<string> banksNeedingStringLoading = new(); 
+        static private HashSet<string> banksNeedingStringLoading = new();
         static BankLoader()
         {
             On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
@@ -27,13 +27,13 @@ namespace Celeste.Mod.AudioSplitter.Audio
         }
 
         private Dictionary<string, Bank> bankCache = new();
-        
+
         private FMOD.Studio.System system;
 
         private ModdedBankLoader moddedLoader = null;
         private VanillaBankLoader vanillaLoader = null;
 
-        public BankLoader(FMOD.Studio.System system) 
+        public BankLoader(FMOD.Studio.System system)
         {
             this.system = system;
 

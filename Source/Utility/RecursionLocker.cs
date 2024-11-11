@@ -39,13 +39,14 @@ namespace Celeste.Mod.AudioSplitter.Utility
             scope = null;
 
             Lock @lock = null;
-            if (!locks.TryGetValue(obj, out @lock)) { 
+            if (!locks.TryGetValue(obj, out @lock))
+            {
                 @lock = locks[obj] = new Lock();
             }
 
             if (!@lock.CanEnter)
                 return false;
-            
+
             scope = @lock.Enter();
             return true;
         }

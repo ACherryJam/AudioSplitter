@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Module;
 using FMOD;
 using FMOD.Studio;
-
-using CelesteAudio = global::Celeste.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Audio
 {
@@ -23,7 +19,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private Dictionary<IntPtr, EventInstance> duplicateInstances = new();
 
-        public InstanceDuplicator(FMOD.Studio.System system) 
+        public InstanceDuplicator(FMOD.Studio.System system)
         {
             this.system = system;
             Instances.Add(this);
@@ -45,7 +41,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         }
 
         public void Clear() => duplicateInstances.Clear();
-        
+
         public EventInstance GetDuplicate(EventInstance origInst)
         {
             return GetDuplicate(origInst.getRaw());

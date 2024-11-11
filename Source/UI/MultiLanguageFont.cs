@@ -1,10 +1,7 @@
-﻿using System.Reflection;
-using System.Collections.Generic;
-
-using Monocle;
-using Celeste;
-using Celeste.Mod;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.Xna.Framework;
+using Monocle;
 
 namespace Celeste.Mod.AudioSplitter.UI
 {

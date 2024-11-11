@@ -1,7 +1,7 @@
 ﻿using System;
+using Celeste.Mod.AudioSplitter.Audio;
 using FMOD;
 using FMOD.Studio;
-using Celeste.Mod.AudioSplitter.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Module
 {
@@ -43,7 +43,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             On.Celeste.Audio.Init += static (On.Celeste.Audio.orig_Init orig) =>
             {
                 orig();
-                
+
                 // TODO: THIS ISN'T RIGHT, ADD CALLBACK IMMEDIATELY AFTER LOADING BANKS
 
                 // Apply an empty callback to all loaded EventDescriptions
