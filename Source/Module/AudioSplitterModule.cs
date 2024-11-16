@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Reflection;
 using Celeste.Mod.AudioSplitter.Audio;
+using Celeste.Mod.AudioSplitter.UI;
 using FMOD;
 using FMOD.Studio;
+using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.AudioSplitter.Module
 {
@@ -15,8 +19,8 @@ namespace Celeste.Mod.AudioSplitter.Module
         public override Type SessionType => typeof(AudioSplitterModuleSession);
         public static AudioSplitterModuleSession Session => (AudioSplitterModuleSession)Instance._Session;
 
-        public AudioDuplicator audioDuplicate { get; private set; } = new AudioDuplicator();
-        public OutputDeviceManager outputDeviceManager { get; private set; } = new OutputDeviceManager();
+        public AudioDuplicator Duplicator { get; private set; } = new AudioDuplicator();
+        public OutputDeviceManager DeviceManager { get; private set; } = new OutputDeviceManager();
 
         public AudioSplitterModule()
         {
@@ -30,37 +34,30 @@ namespace Celeste.Mod.AudioSplitter.Module
 #endif
         }
 
-        ~AudioSplitterModule()
-        {
-            outputDeviceManager.Terminate();
-        }
-
         public override void Load()
         {
-            On.Celeste.Audio.Unload += OnAudioUnload;
+            MultiLanguageFontHooks.Apply();
+            BankLoader.ApplyHooks();
             InstanceDuplicatorHooks.Apply();
 
-            On.Celeste.Audio.Init += static (On.Celeste.Audio.orig_Init orig) =>
-            {
-                orig();
+            On.Celeste.Audio.Init += OnAudioInit;
+            On.Celeste.Audio.Unload += OnAudioUnload;
+            On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
 
-                // TODO: THIS ISN'T RIGHT, ADD CALLBACK IMMEDIATELY AFTER LOADING BANKS
-
-                // Apply an empty callback to all loaded EventDescriptions
-                // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
-                EVENT_CALLBACK emptyCallback = static (type, eventInstance, parameters) => RESULT.OK;
-
-                foreach (Guid guid in global::Celeste.Audio.cachedPaths.Keys)
-                {
-                    global::Celeste.Audio.System.getEventByID(guid, out EventDescription description);
-                    description.setCallback(emptyCallback, 0);
-                }
-            };
+#if DEBUG
+            bool waitForDebugger = false;
+            while (waitForDebugger && !Debugger.IsAttached)
+                continue;
+#endif
         }
 
-        public override void Unload()
+    public override void Unload()
         {
             InstanceDuplicatorHooks.Remove();
+            DeviceManager.Terminate();
+            Duplicator.Terminate();
+
+            MultiLanguageFontHooks.Remove();
         }
 
         public override void LoadContent(bool firstLoad)
@@ -69,22 +66,83 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             if (!firstLoad)
                 return;
+        }
+
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
+        {
+            CreateModMenuSectionHeader(menu, inGame, snapshot);
+            Settings.CreateMenu(menu, inGame);
+        }
+
+        private void OnAudioInit(On.Celeste.Audio.orig_Init orig)
+        {
+            DeviceManager.Initialize();
+            
+            orig();
+
+            // TODO: THIS ISN'T RIGHT, ADD CALLBACK IMMEDIATELY AFTER LOADING BANKS
+
+            // Apply an empty callback to all loaded EventDescriptions
+            // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
+            EVENT_CALLBACK emptyCallback = static (type, eventInstance, parameters) => RESULT.OK;
+
+            foreach (Guid guid in global::Celeste.Audio.cachedPaths.Keys)
+            {
+                global::Celeste.Audio.System.getEventByID(guid, out EventDescription description);
+                description.setCallback(emptyCallback, 0).CheckFMOD();
+            }
 
             if (Settings.EnableOnStartup)
             {
-                audioDuplicate.Initialize();
+                ToggleAudioDuplicator();
             }
         }
 
         private void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
         {
             orig();
-            audioDuplicate.Terminate();
+            Duplicator.Terminate();
         }
 
-        public void EnableAudioDuplicate()
+        private float OnAudioVCAVolume(On.Celeste.Audio.orig_VCAVolume orig, string path, float? volume = null)
         {
-            audioDuplicate.Initialize();
+            // If duplicator is not active, just control the original VCA
+            if (!Duplicator.Initialized)
+                return orig(path, volume);
+            
+            // Forward sounds to original and music to duplicator
+            if (path == "vca:/gameplay_sfx" || path == "vca:/ui_sfx")
+            {
+                Duplicator.VCAVolume(path, 0);
+                return orig(path, volume);
+            }
+            else if (path == "vca:/music")
+            {
+                orig(path, 0);
+                return Duplicator.VCAVolume(path, volume);
+            }
+            else
+            {
+                // The rest of VCAs should go to both
+                Duplicator.VCAVolume(path, volume);
+                return orig(path, volume);
+            }
+        }
+
+        public void ToggleAudioDuplicator()
+        {
+            if (!Duplicator.Initialized)
+            {
+                Duplicator.Initialize();
+                Settings.CelesteAudioOutputDevice.Apply(global::Celeste.Audio.System).CheckFMOD();
+                Settings.DuplicateAudioOutputDevice.Apply(Duplicator.System).CheckFMOD();
+            }
+            else
+            {
+                Duplicator.Terminate();
+            }
+            
+            global::Celeste.Settings.Instance.ApplyVolumes();
         }
     }
 }

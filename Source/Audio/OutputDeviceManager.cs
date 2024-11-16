@@ -29,6 +29,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public bool Initialized { get; private set; } = false;
 
+        public Action OnListUpdate;
+
         public void Initialize()
         {
             if (Initialized)
@@ -58,14 +60,16 @@ namespace Celeste.Mod.AudioSplitter.Audio
             system.setSoftwareChannels(0);
             system.setSoftwareFormat(8000, SPEAKERMODE.DEFAULT, 0);
             system.setAdvancedSettings(ref settings);
-            result = system.init(0, INITFLAGS.NORMAL, 0);
+            result = system.init(0, INITFLAGS.NORMAL, IntPtr.Zero);
             result.CheckFMOD();
 
             result = system.setCallback(DeviceListCallback, SYSTEM_CALLBACK_TYPE.DEVICELISTCHANGED | SYSTEM_CALLBACK_TYPE.DEVICELOST);
             result.CheckFMOD();
 
             On.Celeste.Audio.Update += OnAudioUpdate;
+            FetchDevices();
 
+            Logger.Verbose(nameof(OutputDeviceManager), "Initialized system");
             Initialized = true;
         }
 
@@ -92,7 +96,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             if (system != null && Initialized)
             {
-                try { system.update().CheckFMOD(); }
+                try {
+                    system.update().CheckFMOD();
+                }
                 catch (Exception e)
                 {
                     Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}");
@@ -102,9 +108,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public RESULT DeviceListCallback(nint systemraw, SYSTEM_CALLBACK_TYPE type, nint commanddata1, nint commanddata2, nint userdata)
         {
+            Logger.Verbose(nameof(OutputDeviceManager), "Got callback");
             try
             {
                 FetchDevices();
+                OnListUpdate();
             }
             catch (Exception e)
             {
@@ -117,8 +125,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public void ReloadDeviceList()
         {
-            OUTPUTTYPE outputtype;
-            system.getOutput(out outputtype);
+            system.getOutput(out OUTPUTTYPE outputtype);
             system.setOutput(OUTPUTTYPE.NOSOUND);
             system.setOutput(outputtype);
         }
@@ -133,9 +140,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             for (int index = 0; index < numdrivers; index++)
             {
-                StringBuilder stringBuilder = new(128);
+                StringBuilder stringBuilder = new(256);
 
-                result = system.getDriverInfo(index, stringBuilder, stringBuilder.Length, out Guid id, out _, out _, out _);
+                result = system.getDriverInfo(index, stringBuilder, 256, out Guid id, out _, out _, out _);
                 result.CheckFMOD();
 
                 OutputDeviceInfo info = new OutputDeviceInfo
@@ -149,12 +156,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             devices = newDevices;
             return Devices;
-        }
-
-        public RESULT SetDevice(FMOD.System system, OutputDeviceInfo device)
-        {
-            RESULT result = system.setDriver(device.Index);
-            return result;
         }
     }
 }

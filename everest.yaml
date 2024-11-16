@@ -1,4 +1,4 @@
-- Name: AudioSplitter
+- Name: ZAudioSplitter
   Version: 0.1.0
   DLL: bin/AudioSplitter.dll
   Dependencies:

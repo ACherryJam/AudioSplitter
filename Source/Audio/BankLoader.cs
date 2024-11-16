@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Celeste.Mod.AudioSplitter.Module;
 using Celeste.Mod.Core;
 using FMOD;
 using FMOD.Studio;
@@ -15,14 +16,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
     public class BankLoader
     {
         static private HashSet<string> banksNeedingStringLoading = new();
-        static BankLoader()
+        static public void ApplyHooks()
         {
             On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
         }
 
         static Bank OnAudioBanksLoad(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
         {
-            banksNeedingStringLoading.Add(name);
+            if (loadStrings)
+                banksNeedingStringLoading.Add(name);
             return orig(name, loadStrings);
         }
 
@@ -67,22 +69,26 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private Bank LoadBank(string name, bool loadStrings)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Trying to load bank {name}");
+
             Bank bank;
             if (bankCache.TryGetValue(name, out bank))
                 return bank;
 
             ModAsset asset;
-            if (Everest.Content.TryGet<AssetTypeBank>($"Audio/{name}", out asset))
+            if (Everest.Content.TryGet<AssetTypeBank>(name, out asset))
                 bank = moddedLoader.LoadBank(asset);
             else
                 bank = vanillaLoader.LoadBank(name);
+            Logger.Verbose(nameof(AudioSplitterModule), $"Loaded bank {name}");
 
             if (loadStrings)
             {
-                if (Everest.Content.TryGet<AssetTypeBank>($"Audio/{name}.strings", out asset))
+                if (Everest.Content.TryGet<AssetTypeBank>(name, out asset))
                     moddedLoader.LoadStringBank(asset);
                 else
                     vanillaLoader.LoadStringBank(name);
+                Logger.Verbose(nameof(AudioSplitterModule), $"Loaded string bank {name}.strings");
             }
 
             return bankCache[name] = bank;

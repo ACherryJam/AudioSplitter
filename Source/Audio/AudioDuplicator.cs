@@ -1,4 +1,6 @@
-﻿using Celeste.Mod.AudioSplitter.Utility;
+﻿using System;
+using Celeste.Mod.AudioSplitter.Module;
+using Celeste.Mod.AudioSplitter.Utility;
 using Celeste.Mod.Core;
 using FMOD;
 using FMOD.Studio;
@@ -19,8 +21,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
     /// </remarks>
     public class AudioDuplicator
     {
-        private FMOD.Studio.System system;
-        private FMOD.System lowLevelSystem;
+        private FMOD.Studio.System system = null;
 
         private BankLoader bankLoader = null;
         private EventCache eventCache = null;
@@ -29,6 +30,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         private RecursionLocker locker = new();
 
         public bool Initialized { get; private set; } = false;
+        public FMOD.Studio.System System => system;
 
         /// <summary>
         /// Load the audio data and apply the necessary hooks
@@ -39,20 +41,31 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return;
 
             FMOD.Studio.System.create(out system).CheckFMOD();
-            system.initialize(1024, FMOD.Studio.INITFLAGS.NORMAL, FMOD.INITFLAGS.NORMAL, nint.Zero).CheckFMOD();
+            system.initialize(1024, FMOD.Studio.INITFLAGS.NORMAL, FMOD.INITFLAGS.NORMAL, IntPtr.Zero).CheckFMOD();
+
+            var attributes = new FMOD.Studio._3D_ATTRIBUTES
+            {
+                position = new VECTOR { x = 0f, y = 0f, z = 1f },
+                forward = new VECTOR { x = 0f, y = 1f, z = 0f },
+                up = new VECTOR { x = 0f, y = 0f, z = -345f },
+            };
+            system.setListenerAttributes(0, attributes).CheckFMOD();
 
             // TODO: Load banks in a different thread and add a cool loading animation
             bankLoader = new(system);
-            bankLoader.LoadBanks();
-
             eventCache = new(system);
+            instanceDuplicator = new(system);
+
+            bankLoader.LoadBanks();
+            eventCache.LoadUsedDescriptions();
+            instanceDuplicator.Initialize();
+
             On.Celeste.Audio.GetEventDescription += OnAudioGetEventDescription;
             On.Celeste.Audio.ReleaseUnusedDescriptions += OnAudioReleaseUnusedDescriptions;
 
-            instanceDuplicator = new(system);
-            instanceDuplicator.Activate();
-
             ApplyHooks();
+
+            Initialized = true;
         }
 
         /// <summary>
@@ -69,15 +82,20 @@ namespace Celeste.Mod.AudioSplitter.Audio
             On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
             eventCache.Clear();
 
-            instanceDuplicator.Deactivate();
+            instanceDuplicator.Terminate();
             instanceDuplicator.Clear();
 
             RemoveHooks();
+
+            system.release();
+            system = null;
+
+            Initialized = false;
         }
 
         private void Update()
         {
-            if (system == null && Initialized)
+            if (system != null && Initialized)
             {
                 system.update().CheckFMOD();
             }
@@ -92,7 +110,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
             On.Celeste.Audio.SetListenerPosition += OnAudioSetListenerPosition;
         }
 
-
         public void RemoveHooks()
         {
             On.Celeste.Audio.Update -= OnAudioUpdate;
@@ -100,6 +117,22 @@ namespace Celeste.Mod.AudioSplitter.Audio
             On.Celeste.Audio.BusPaused -= OnAudioBusPaused;
             On.Celeste.Audio.BusStopAll -= OnAudioBusStopAll;
             On.Celeste.Audio.SetListenerPosition -= OnAudioSetListenerPosition;
+        }
+
+        public float VCAVolume(string path, float? newVolume = null)
+        {
+            float volume = 1f;
+            if (system.getVCA(path, out VCA vca) == RESULT.OK)
+            {
+                if (newVolume != null)
+                    vca.setVolume(newVolume.Value);
+                vca.getVolume(out volume, out _);
+            }
+            else 
+            {
+                Logger.Error(nameof(AudioSplitterModule), "Failed to get VCA for VCAVolume");
+            }
+            return volume;
         }
 
         private void OnAudioUpdate(On.Celeste.Audio.orig_Update origUpdate)

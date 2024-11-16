@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Module;
 using Celeste.Mod.AudioSplitter.Utility;
@@ -95,9 +96,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!locker.TryEnter(nameof(OnInstanceCreate), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
-                result = instanceDuplicater.DuplicateInstance(guid, origInst.getRaw());
+                result = instanceDuplicater.DuplicateInstance(guid, origInst);
+                result.CheckFMOD();
             }
 
             return RESULT.OK;
@@ -111,12 +114,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!locker.TryEnter(nameof(OnInstanceStart), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
 
                 result = duplicate.start();
+                result.CheckFMOD();
+                Logger.Verbose(nameof(AudioSplitterModule), $"Starting duplicate {duplicate.getRaw()}");
             }
 
             return RESULT.OK;
@@ -131,7 +137,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!locker.TryEnter(nameof(OnInstanceStop), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -151,7 +158,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!locker.TryEnter(nameof(OnInstanceRelease), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -164,12 +172,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceTriggerCue(On.FMOD.Studio.EventInstance.orig_triggerCue orig, EventInstance inst)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Trigger cue instance {inst.getRaw()}");
+
             RESULT result = orig(inst);
 
             if (!locker.TryEnter(nameof(OnInstanceTriggerCue), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -185,12 +196,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, FMOD.Studio._3D_ATTRIBUTES attributes
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set 3d instance {inst.getRaw()}");
             RESULT result = orig(inst, attributes);
 
             if (!locker.TryEnter(nameof(OnInstanceSet3DAttributes), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -206,12 +219,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE type
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set callback instance {inst.getRaw()}");
+
             RESULT result = orig(inst, callback, type);
 
             if (!locker.TryEnter(nameof(OnInstanceSetCallback), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -224,12 +240,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceSetListenerMask(On.FMOD.Studio.EventInstance.orig_setListenerMask orig, EventInstance inst, uint mask)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set listener mask instance {inst.getRaw()}");
             RESULT result = orig(inst, mask);
 
             if (!locker.TryEnter(nameof(OnInstanceSetListenerMask), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -245,14 +263,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, string name, float value
         )
         {
-            Logger.Log(LogLevel.Verbose, nameof(AudioSplitterModule), $"Setting parameter value for instance {inst.getRaw()}, {name}={value}");
+            //Logger.Log(LogLevel.Verbose, nameof(AudioSplitterModule), $"Setting parameter value for instance {inst.getRaw()}, {name}={value}");
 
             RESULT result = orig(inst, name, value);
 
             if (!locker.TryEnter(nameof(OnInstanceSetParameterValue), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -268,12 +287,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, int index, float value
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter by index instance {inst.getRaw()}");
             RESULT result = orig(inst, index, value);
 
             if (!locker.TryEnter(nameof(OnInstanceSetParameterValueByIndex), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -289,12 +310,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, int[] indices, float[] values, int count
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set parameters by indices instance {inst.getRaw()}");
             RESULT result = orig(inst, indices, values, count);
 
             if (!locker.TryEnter(nameof(OnInstanceSetParameterValuesByIndices), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -307,12 +330,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceSetPaused(On.FMOD.Studio.EventInstance.orig_setPaused orig, EventInstance inst, bool paused)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set paused instance {inst.getRaw()}");
             RESULT result = orig(inst, paused);
 
             if (!locker.TryEnter(nameof(OnInstanceSetPaused), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -325,12 +350,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceSetPitch(On.FMOD.Studio.EventInstance.orig_setPitch orig, EventInstance inst, float pitch)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set pitch instance {inst.getRaw()}");
             RESULT result = orig(inst, pitch);
 
             if (!locker.TryEnter(nameof(OnInstanceSetPitch), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -346,12 +373,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, EVENT_PROPERTY index, float value
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set property instance {inst.getRaw()}");
             RESULT result = orig(inst, index, value);
 
             if (!locker.TryEnter(nameof(OnInstanceSetProperty), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -367,12 +396,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, int index, float level
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set reverb level instance {inst.getRaw()}");
             RESULT result = orig(inst, index, level);
 
             if (!locker.TryEnter(nameof(OnInstanceSetReverbLevel), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -388,12 +419,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventInstance inst, int position
         )
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set timeline instance {inst.getRaw()}");
             RESULT result = orig(inst, position);
 
             if (!locker.TryEnter(nameof(OnInstanceSetTimelinePosition), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -406,12 +439,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceSetUserData(On.FMOD.Studio.EventInstance.orig_setUserData orig, EventInstance inst, nint data)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set userdata instance {inst.getRaw()}");
             RESULT result = orig(inst, data);
 
             if (!locker.TryEnter(nameof(OnInstanceSetUserData), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -424,12 +459,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT OnInstanceSetVolume(On.FMOD.Studio.EventInstance.orig_setVolume orig, EventInstance inst, float volume)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Set volume instance {inst.getRaw()}");
             RESULT result = orig(inst, volume);
 
             if (!locker.TryEnter(nameof(OnInstanceSetVolume), out IDisposable scope))
                 return result;
 
-            foreach (var instanceDuplicater in InstanceDuplicator.ActiveDuplicaters)
+            using (scope)
+            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
             {
                 var duplicate = instanceDuplicater.GetDuplicate(inst);
                 if (duplicate == null) continue;
@@ -440,18 +477,46 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return RESULT.OK;
         }
 
+        private static List<GCHandle> wrapperHandles = new();
+
+        /// <summary>
+        /// Adds a DESTROYED check to an user-defined event callback
+        /// Callbacks are the only way to know when instance is destroyed and we don't want to fully override user callbacks
+        /// </summary>
+        /// <param name="callback">Original event callback to be set</param>
+        /// <param name="callbackmask">Original callback bitmask</param>
+        /// <returns>Wrapped event callback, modified callback bitmask with added callback types</returns>
+        public static Tuple<EVENT_CALLBACK, EVENT_CALLBACK_TYPE> WrapEventCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask)
+        {
+            Logger.Verbose(nameof(AudioSplitterModule), "Wrapping event callback");
+            bool expectesDestroyed = (callbackmask & EVENT_CALLBACK_TYPE.DESTROYED) == EVENT_CALLBACK_TYPE.DESTROYED;
+
+            EVENT_CALLBACK wrappedCallback = (type, instancePtr, parameters) =>
+            {
+                foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
+                {
+                    if (type == EVENT_CALLBACK_TYPE.DESTROYED)
+                        instanceDuplicater.DestroyDuplicate(new EventInstance(instancePtr));
+                }
+
+                if (!expectesDestroyed)
+                    return RESULT.OK;
+
+                return callback(type, instancePtr, parameters);
+            };
+            wrapperHandles.Add(GCHandle.Alloc(wrappedCallback));
+
+            return new Tuple<EVENT_CALLBACK, EVENT_CALLBACK_TYPE>(wrappedCallback, callbackmask | EVENT_CALLBACK_TYPE.DESTROYED);
+        }
+
         /// <see cref="InstanceDuplicator.WrapEventCallback">
         private static RESULT WrapEventInstanceCallback(
             On.FMOD.Studio.EventInstance.orig_setCallback setCallback,
             EventInstance eventInstance, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            foreach (var instanceDuplicator in InstanceDuplicator.Instances)
-            {
-                (callback, callbackmask) = instanceDuplicator.WrapEventCallback(callback, callbackmask);
-            }
-
-            return setCallback(eventInstance, callback, callbackmask);
+            var wrapped = WrapEventCallback(callback, callbackmask);
+            return setCallback(eventInstance, wrapped.Item1, wrapped.Item2);
         }
 
         private static RESULT WrapEventDescriptionCallback(
@@ -459,12 +524,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
             EventDescription eventDescription, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            foreach (var instanceDuplicator in InstanceDuplicator.Instances)
-            {
-                (callback, callbackmask) = instanceDuplicator.WrapEventCallback(callback, callbackmask);
-            }
-
-            return setCallback(eventDescription, callback, callbackmask);
+            var wrapped = WrapEventCallback(callback, callbackmask);
+            return setCallback(eventDescription, wrapped.Item1, wrapped.Item2);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Celeste.Mod.AudioSplitter.Module;
 using FMOD;
 using FMOD.Studio;
 using CelesteAudio = global::Celeste.Audio;
@@ -44,6 +45,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             if (result == RESULT.OK)
             {
+                Logger.Verbose(nameof(AudioSplitterModule), $"Cached event description {path}");
                 eventDescription.loadSampleData();
                 cachedEventDescriptions.Add(path, eventDescription);
             }
@@ -55,7 +57,19 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 }
                 if (!(path == "null") && !(path == "event:/none"))
                 {
-                    Logger.Warn("Audio", "Event not found: " + path);
+                    Logger.Warn(nameof(EventCache), "Event not found: " + path);
+                }
+            }
+        }
+
+        public void LoadUsedDescriptions()
+        {
+            foreach ((string path, EventDescription desc) in CelesteAudio.cachedEventDescriptions)
+            {
+                desc.getInstanceCount(out int num);
+                if (num >= 0)
+                {
+                    LoadEventDescription(path);
                 }
             }
         }

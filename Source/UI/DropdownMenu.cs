@@ -2,118 +2,137 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Xna.Framework;
-
 using Monocle;
 
 namespace Celeste.Mod.AudioSplitter.UI
 {
+    /// <summary>
+    /// Option behaviour inside SubMenu, basically
+    /// </summary>
+    /// <typeparam name="T">Type of stored data</typeparam>
     public class DropdownMenu<T> : TextMenuExt.SubMenu
     {
-        public Action<T> OnOptionSelect;
-
-        protected T option;
-        protected String optionLabel = "";
-
-        public T Option
+        public class Option
         {
-            get { return option; }
-            set
+            public string Label;
+            public T Value;
+
+            public Option(string label, T value)
             {
-                option = value;
-                this.optionLabel = value.ToString();
+                Label = label;
+                Value = value;
             }
         }
-        protected List<T> Options = new List<T>();
 
-        protected bool OptionInList
+        private int index = 0;
+        public int OptionIndex
+        {
+            get => index;
+            set
+            {
+                if (value >= 0 && value < Options.Count)
+                {
+                    index = value;
+                    CurrentOption = Options[index];
+                }
+            }
+        }
+        public List<Option> Options = new();
+        public Option CurrentOption = null;
+
+        public Action<T> OnOptionChange;
+
+        // Why aren't Icon and ease protected? :thinking:
+        private FieldInfo arrowIconInfo = null;
+        private FieldInfo easeInfo = null;
+        
+        protected MTexture arrowIcon
         {
             get
             {
-                foreach (T option in Options)
-                {
-                    if (EqualityComparer<T>.Default.Equals(this.option, option))
-                        return true;
-                }
-                return false;
+                if (arrowIconInfo == null)
+                    arrowIconInfo = typeof(TextMenuExt.SubMenu).GetField("Icon", BindingFlags.Instance | BindingFlags.NonPublic);
+                return (MTexture)arrowIconInfo.GetValue(this);
             }
         }
 
-
-        FieldInfo Icon;
-        FieldInfo ease;
-
-        public DropdownMenu(String label) : base(label, false)
+        protected float ease
         {
-            Icon = typeof(DropdownMenu<T>).BaseType.GetField("Icon", BindingFlags.Instance | BindingFlags.NonPublic);
-            ease = typeof(DropdownMenu<T>).BaseType.GetField("ease", BindingFlags.Instance | BindingFlags.NonPublic);
+            get
+            {
+                if (easeInfo == null)
+                    easeInfo = typeof(TextMenuExt.SubMenu).GetField("ease", BindingFlags.Instance | BindingFlags.NonPublic);
+                return (float)easeInfo.GetValue(this);
+            }
         }
 
-        public DropdownMenu(String label, T option) : this(label)
+        public DropdownMenu(string label) : base(label, false) { }
+
+        public DropdownMenu<T> Add(string label, T value, bool selected = false)
         {
-            Option = option;
+            var option = new Option(label, value);
+            Options.Add(option);
+
+            if (CurrentOption == null)
+                OptionIndex = 0;
+
+            Item item = new(option);
+            int itemPosition = Options.Count - 1;
+            item.Pressed(() =>
+            {
+                OptionIndex = itemPosition;
+                OnOptionChange(CurrentOption.Value);
+                Exit();
+            });
+            base.Add(item);
+
+            if (selected)
+                OptionIndex = itemPosition;
+
+            return this;
         }
 
-        public void SetOption(T option)
+        public override void Added()
         {
-            Option = option;
-            OnOptionSelect(option);
+            this.Container.InnerContent = TextMenu.InnerContentMode.TwoColumn;
         }
 
-        public T GetOption()
+        public DropdownMenu<T> Change(Action<T> action)
         {
-            return Option;
-        }
-
-        public override float RightWidth()
-        {
-            return MultiLanguageFont.Measure(optionLabel).X + ((MTexture)Icon.GetValue(this)).Width;
-        }
-
-        public void Add(T option)
-        {
-            if (option == null)
-                Option = option;
-            this.Options.Add(option);
-            base.Add(new DropdownButton<T>(option, this));
-        }
-
-        public void Add(List<T> list)
-        {
-            foreach (T option in list)
-                Add(option);
+            OnOptionChange = action;
+            return this;
         }
 
         public new void Clear()
         {
             base.Clear();
-            this.Options.Clear();
+            Options.Clear();
         }
 
-        public String GetOptionLabel()
+        public override float LeftWidth() => MultiLanguageFont.Measure(Label).X;
+        public override float RightWidth() => MultiLanguageFont.Measure(GetOptionLabel()).X + arrowIcon.Width;
+
+        private string GetOptionLabel()
         {
-            float width = MultiLanguageFont.Measure(optionLabel).X;
-            float overflow_width = Container.Width - LeftWidth() - 100f;
+            string label = CurrentOption.Label;
 
-            if (width > overflow_width)
+            float width = MultiLanguageFont.Measure(label).X;
+            float maxWidth = Container.Width - LeftWidth() - 96f;
+
+            if (width > maxWidth)
             {
-                String new_label = optionLabel;
-                int length = optionLabel.Length;
-
-                while (MultiLanguageFont.Measure(new_label + "...").X > overflow_width)
-                    new_label = new_label.Substring(0, --length);
-                new_label += "...";
-
-                optionLabel = new_label;
+                int length = label.Length;
+                
+                while (length > 0 && MultiLanguageFont.Measure(label + "...").X > maxWidth)
+                    label = label.Substring(0, --length);
+                label += "...";
             }
 
-            return optionLabel;
+            return label;
         }
 
         public override void Render(Vector2 position, bool highlighted)
         {
-            float _ease = (float)ease.GetValue(this);
-            MTexture icon = (MTexture)Icon.GetValue(this);
-
             Vector2 top = new Vector2(position.X, position.Y - (Height() / 2));
 
             float alpha = Container.Alpha;
@@ -123,16 +142,20 @@ namespace Celeste.Mod.AudioSplitter.UI
             bool uncentered = Container.InnerContent == TextMenu.InnerContentMode.TwoColumn && !AlwaysCenter;
 
             Vector2 titlePosition = top + (Vector2.UnitY * TitleHeight / 2) + (uncentered ? Vector2.Zero : new Vector2(Container.Width * 0.5f, 0f));
-            Vector2 justify = new Vector2(0f, 0.5f);
+            Vector2 justify = uncentered ? new Vector2(0f, 0.5f) : new Vector2(0.5f, 0.5f);
             ActiveFont.DrawOutline(Label, titlePosition, justify, Vector2.One, color, 2f, strokeColor);
 
-            Vector2 position2 = titlePosition + new Vector2(Container.Width - RightWidth() - icon.Width - 10f, 0);
-            Color itemColor = OptionInList ? color : Color.DarkSlateGray;
-            MultiLanguageFont.DrawOutline(GetOptionLabel(), position2, justify, Vector2.One, itemColor, 2f, strokeColor);
+            Vector2 optionPosition = titlePosition + new Vector2(Container.Width - RightWidth() - arrowIcon.Width - 10f, 0);
+            Color itemColor = Options.Contains(CurrentOption) ? color : Color.DarkSlateGray;
+            MultiLanguageFont.DrawOutline(GetOptionLabel(), optionPosition, justify, Vector2.One, itemColor, 2f, strokeColor);
 
-            DrawIcon(position2, icon, new Vector2(MultiLanguageFont.Measure(GetOptionLabel()).X + icon.Width, 5f), true, (Disabled || Items.Count < 1 ? Color.DarkSlateGray : (Focused ? Container.HighlightColor : Color.White)) * alpha, 0.8f);
+            Vector2 iconJustify = uncentered ? new Vector2(MultiLanguageFont.Measure(GetOptionLabel()).X + arrowIcon.Width, 5f) : new Vector2(MultiLanguageFont.Measure(GetOptionLabel()).X / 2 + arrowIcon.Width, 5f);
+            arrowIcon.DrawOutlineCentered(
+                optionPosition + iconJustify,
+                (Disabled || Items.Count < 1 ? Color.DarkSlateGray : (Focused ? Container.HighlightColor : Color.White)) * alpha
+            );
 
-            if (Focused && _ease > 0.9f)
+            if (Focused && ease > 0.9f)
             {
                 Vector2 menuPosition = new Vector2(top.X + ItemIndent, top.Y + TitleHeight + ItemSpacing);
                 RecalculateSize();
@@ -152,45 +175,17 @@ namespace Celeste.Mod.AudioSplitter.UI
             }
         }
 
-        private static void DrawIcon(Vector2 position, MTexture icon, Vector2 justify, bool outline, Color color, float scale)
+        internal class Item : TextMenu.Button
         {
-            if (outline)
-            {
-                icon.DrawOutlineCentered(position + justify, color);
-                return;
-            }
-            icon.DrawCentered(position + justify, color, scale);
-        }
+            public Option Option;
 
-        internal class DropdownButton<T> : TextMenu.Button
-        {
-            protected T Option;
-            public DropdownMenu<T> Parent;
-            public DropdownButton(T option) : base(option.ToString())
+            public Item(Option option) : base(option.Label)
             {
-                this.Option = option;
+                Option = option;
             }
 
-            public DropdownButton(T option, DropdownMenu<T> dropdownMenu) : this(option)
-            {
-                this.Parent = dropdownMenu;
-
-                OnPressed += () =>
-                {
-                    this.Parent.SetOption(Option);
-                    this.Parent.Exit();
-                };
-            }
-
-            public override float LeftWidth()
-            {
-                return 0f;
-            }
-
-            public override float RightWidth()
-            {
-                return MultiLanguageFont.Measure(Label).X;
-            }
+            public override float LeftWidth() => 0f;
+            public override float RightWidth() => MultiLanguageFont.Measure(Label).X;
 
             public override void Render(Vector2 position, bool highlighted)
             {
@@ -198,8 +193,8 @@ namespace Celeste.Mod.AudioSplitter.UI
                 Color color = (Disabled ? Color.DarkSlateGray : ((highlighted ? Container.HighlightColor : Color.White) * alpha));
                 Color strokeColor = Color.Black * (alpha * alpha * alpha);
 
-                Vector2 position2 = position + new Vector2(Container.Width - RightWidth(), 0);
-                MultiLanguageFont.DrawOutline(Label, position2, new Vector2(0f, 0.5f), Vector2.One, color, 2f, strokeColor);
+                position += new Vector2(Container.Width - RightWidth(), 0);
+                MultiLanguageFont.DrawOutline(Label, position, new Vector2(0f, 0.5f), Vector2.One, color, 2f, strokeColor);
             }
         }
     }
