@@ -41,7 +41,7 @@ namespace Celeste.Mod.AudioSplitter.Module
                     DuplicateAudioOutputDevice.Apply(AudioSplitterModule.Instance.Duplicator.System); 
                 });
 
-            var toggleDuplicate = new TextMenu.Button(
+            var toggleDuplicate = new ConfirmButton(
                 Dialog.Clean($"MODOPTIONS_AUDIOSPLITTER_{(DuplicatorInitialized ? "DISABLE_DUPLICATE" : "ENABLE_DUPLICATE")}")
             );
             toggleDuplicate.Pressed(() =>
