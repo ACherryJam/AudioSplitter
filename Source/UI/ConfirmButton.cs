@@ -115,6 +115,8 @@ namespace Celeste.Mod.AudioSplitter.UI
             wiggler.UseRawDeltaTime = true;
         }
 
+        public override string SearchLabel() => Label;
+
         public override float LeftWidth()
         {
             return Calc.Max(
