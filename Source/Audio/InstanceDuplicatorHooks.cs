@@ -8,6 +8,8 @@ using FMOD;
 using FMOD.Studio;
 using MonoMod.RuntimeDetour;
 
+using CelesteAudio = global::Celeste.Audio;
+
 namespace Celeste.Mod.AudioSplitter.Audio
 {
     /// <summary>
@@ -51,6 +53,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 On.FMOD.Studio.EventInstance.setCallback += WrapEventInstanceCallback;
                 On.FMOD.Studio.EventDescription.setCallback += WrapEventDescriptionCallback;
             }
+
+            On.Celeste.Audio.Banks.Load += SetCallbacksToLoadedVanillaBank;
+            On.Celeste.Audio.IngestBank += SetCallbacksToLoadedModdedBank;
         }
 
         public static void Remove()
@@ -78,6 +83,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             On.FMOD.Studio.EventInstance.setCallback -= WrapEventInstanceCallback;
             On.FMOD.Studio.EventDescription.setCallback -= WrapEventDescriptionCallback;
+
+            On.Celeste.Audio.Banks.Load -= SetCallbacksToLoadedVanillaBank;
+            On.Celeste.Audio.IngestBank -= SetCallbacksToLoadedModdedBank;
         }
 
         private static RESULT OnInstanceCreate(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription origDesc, out EventInstance origInst)
@@ -526,6 +534,42 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             var wrapped = WrapEventCallback(callback, callbackmask);
             return setCallback(eventDescription, wrapped.Item1, wrapped.Item2);
+        }
+
+
+        static EVENT_CALLBACK emptyCallback = (type, eventInstance, parameters) => RESULT.OK;
+        private static void SetCallbacksToBank(Bank bank)
+        {
+            // Apply an empty callback to all EventDescriptions in the bank
+            // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
+            bank.getEventList(out var descriptions);
+            foreach (EventDescription description in descriptions)
+            {
+                description.setCallback(emptyCallback, 0).CheckFMOD();
+            }
+        }
+
+
+        private static Bank SetCallbacksToLoadedModdedBank(On.Celeste.Audio.orig_IngestBank orig, ModAsset asset)
+        {
+            bool needToSetCallbacks = !CelesteAudio.Banks.ModCache.TryGetValue(asset, out _);
+
+            Bank bank = orig(asset);
+            if (needToSetCallbacks)
+                SetCallbacksToBank(bank);
+
+            return bank;
+        }
+
+        private static Bank SetCallbacksToLoadedVanillaBank(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
+        {
+            bool needToSetCallbacks = !CelesteAudio.Banks.Banks.TryGetValue(name, out _);
+
+            Bank bank = orig(name, loadStrings);
+            if (needToSetCallbacks)
+                SetCallbacksToBank(bank);
+
+            return bank;
         }
     }
 }

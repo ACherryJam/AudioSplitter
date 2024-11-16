@@ -37,7 +37,7 @@ namespace Celeste.Mod.AudioSplitter.Module
         public override void Load()
         {
             MultiLanguageFontHooks.Apply();
-            BankLoader.ApplyHooks();
+            BankCache.ApplyHooks();
             InstanceDuplicatorHooks.Apply();
 
             On.Celeste.Audio.Init += OnAudioInit;
@@ -79,18 +79,6 @@ namespace Celeste.Mod.AudioSplitter.Module
             DeviceManager.Initialize();
             
             orig();
-
-            // TODO: THIS ISN'T RIGHT, ADD CALLBACK IMMEDIATELY AFTER LOADING BANKS
-
-            // Apply an empty callback to all loaded EventDescriptions
-            // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
-            EVENT_CALLBACK emptyCallback = static (type, eventInstance, parameters) => RESULT.OK;
-
-            foreach (Guid guid in global::Celeste.Audio.cachedPaths.Keys)
-            {
-                global::Celeste.Audio.System.getEventByID(guid, out EventDescription description);
-                description.setCallback(emptyCallback, 0).CheckFMOD();
-            }
 
             if (Settings.EnableOnStartup)
             {
