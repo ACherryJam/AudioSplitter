@@ -15,21 +15,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
 {
     public class BankLoader
     {
-        static private HashSet<string> banksNeedingStringLoading = new();
-        static public void ApplyHooks()
-        {
-            On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
-        }
-
-        static Bank OnAudioBanksLoad(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
-        {
-            if (loadStrings)
-                banksNeedingStringLoading.Add(name);
-            return orig(name, loadStrings);
-        }
-
-        private Dictionary<string, Bank> bankCache = new();
-
         private FMOD.Studio.System system;
 
         private ModdedBankLoader moddedLoader = null;
@@ -43,38 +28,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
             vanillaLoader = new(this.system);
         }
 
-        public void LoadBanks()
-        {
-            HashSet<string> loadedBanks = new();
-            loadedBanks.UnionWith(CelesteAudio.Banks.Banks.Keys);
-            loadedBanks.UnionWith(CelesteAudio.Banks.ModCache.Keys.Select(asset => asset.PathVirtual));
-
-            foreach (string name in loadedBanks)
-            {
-                if (bankCache.ContainsKey(name))
-                    continue;
-
-                LoadBank(name, banksNeedingStringLoading.Contains(name));
-            }
-        }
-
-        public void UnloadBanks()
-        {
-            foreach ((string name, Bank bank) in bankCache)
-            {
-                bank.unload();
-                bankCache.Remove(name);
-            }
-        }
-
-        private Bank LoadBank(string name, bool loadStrings)
+        public Bank LoadBank(string name, bool loadStrings)
         {
             Logger.Verbose(nameof(AudioSplitterModule), $"Trying to load bank {name}");
 
             Bank bank;
-            if (bankCache.TryGetValue(name, out bank))
-                return bank;
-
             ModAsset asset;
             if (Everest.Content.TryGet<AssetTypeBank>(name, out asset))
                 bank = moddedLoader.LoadBank(asset);
@@ -91,7 +49,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 Logger.Verbose(nameof(AudioSplitterModule), $"Loaded string bank {name}.strings");
             }
 
-            return bankCache[name] = bank;
+            return bank;
         }
     }
 

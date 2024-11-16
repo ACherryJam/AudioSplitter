@@ -23,7 +23,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
     {
         private FMOD.Studio.System system = null;
 
-        private BankLoader bankLoader = null;
+        private BankCache bankCache = null;
         private EventCache eventCache = null;
         private InstanceDuplicator instanceDuplicator = null;
 
@@ -52,11 +52,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
             system.setListenerAttributes(0, attributes).CheckFMOD();
 
             // TODO: Load banks in a different thread and add a cool loading animation
-            bankLoader = new(system);
+            bankCache = new(system);
             eventCache = new(system);
             instanceDuplicator = new(system);
 
-            bankLoader.LoadBanks();
+            bankCache.LoadUnloadedBanks();
             eventCache.LoadUsedDescriptions();
             instanceDuplicator.Initialize();
 
@@ -76,7 +76,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!Initialized)
                 return;
 
-            bankLoader.UnloadBanks();
+            bankCache.UnloadBanks();
 
             On.Celeste.Audio.GetEventDescription -= OnAudioGetEventDescription;
             On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
