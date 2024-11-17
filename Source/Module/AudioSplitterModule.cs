@@ -7,6 +7,8 @@ using FMOD;
 using FMOD.Studio;
 using MonoMod.RuntimeDetour;
 
+using CelesteAudio = global::Celeste.Audio;
+
 namespace Celeste.Mod.AudioSplitter.Module
 {
     public class AudioSplitterModule : EverestModule
@@ -122,7 +124,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             if (!Duplicator.Initialized)
             {
                 Duplicator.Initialize();
-                Settings.CelesteAudioOutputDevice.Apply(global::Celeste.Audio.System).CheckFMOD();
+                Settings.CelesteAudioOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
                 Settings.DuplicateAudioOutputDevice.Apply(Duplicator.System).CheckFMOD();
             }
             else

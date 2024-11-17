@@ -12,7 +12,6 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         // ===== Audio Splitting ===== //
         public bool EnableOnStartup { get; set; } = false;
-        public bool PlayElevatorMusicWhileLoading { get; set; } = true;
 
         // ===== Menu ===== //
         private bool DuplicatorInitialized => AudioSplitterModule.Instance.Duplicator.Initialized;
@@ -67,11 +66,6 @@ namespace Celeste.Mod.AudioSplitter.Module
             menu.Add(
                 new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_ENABLE_ON_STARTUP"), EnableOnStartup)
                 .Change((value) => { EnableOnStartup = value; })
-            );
-            menu.Add(
-                new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_ELEVATOR_MUSIC"), PlayElevatorMusicWhileLoading)
-                .Change((value) => { PlayElevatorMusicWhileLoading = value; })
-                .AddDescription(menu, "MODOPTIONS_AUDIOSPLITTER_ELEVATOR_MUSIC_DESCRIPTION")
             );
 
             // 3. Configure items
