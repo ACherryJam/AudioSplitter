@@ -124,12 +124,13 @@ namespace Celeste.Mod.AudioSplitter.Module
             if (!Duplicator.Initialized)
             {
                 Duplicator.Initialize();
-                Settings.CelesteAudioOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
-                Settings.DuplicateAudioOutputDevice.Apply(Duplicator.System).CheckFMOD();
+                Settings.SFXOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
+                Settings.MusicOutputDevice.Apply(Duplicator.System).CheckFMOD();
             }
             else
             {
                 Duplicator.Terminate();
+                Settings.AudioOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
             }
             
             global::Celeste.Settings.Instance.ApplyVolumes();
