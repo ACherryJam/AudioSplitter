@@ -68,7 +68,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             });
 
             // 2. Add items
-            menu.Add(new TextMenu.SubHeader("Device Selection", false));
+            menu.Add(new TextMenu.SubHeader(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_HEADER_DEVICESELECTION"), false));
             menu.Add(audioDevice);
             menu.Add(sfxDevice);
             menu.Add(musicDevice);
@@ -77,7 +77,7 @@ namespace Celeste.Mod.AudioSplitter.Module
                 .Pressed(() => { AudioSplitterModule.Instance.DeviceManager.ReloadDeviceList(); })
                 //.AddDescription(menu, "MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST_DESCRIPTION")
             );
-            menu.Add(new TextMenu.SubHeader("Audio Splitting", false));
+            menu.Add(new TextMenu.SubHeader(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_HEADER_AUDIOSPLITTING"), false));
             menu.Add(toggleDuplicate);
             menu.Add(
                 new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_ENABLE_ON_STARTUP"), EnableOnStartup)

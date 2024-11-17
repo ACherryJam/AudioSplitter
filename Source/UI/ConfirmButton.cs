@@ -121,7 +121,7 @@ namespace Celeste.Mod.AudioSplitter.UI
         {
             return Calc.Max(
                 ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_CONFIRMATION")).X,
-                ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_LABEL")).X
+                ActiveFont.Measure(Label).X
             );
         }
 

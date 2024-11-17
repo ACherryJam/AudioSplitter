@@ -55,11 +55,11 @@ namespace Celeste.Mod.AudioSplitter.Module
 
     public override void Unload()
         {
+            MultiLanguageFontHooks.Remove();
+
             InstanceDuplicatorHooks.Remove();
             DeviceManager.Terminate();
             Duplicator.Terminate();
-
-            MultiLanguageFontHooks.Remove();
         }
 
         public override void LoadContent(bool firstLoad)
