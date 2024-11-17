@@ -29,7 +29,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public bool Initialized { get; private set; } = false;
 
-        public Action OnListUpdate;
+        public Action<List<OutputDeviceInfo>> OnListUpdate;
+
+        // ref to not get freed by GC (GC is such a pain)
+        private SYSTEM_CALLBACK callback;
 
         public void Initialize()
         {
@@ -63,7 +66,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
             result = system.init(0, INITFLAGS.NORMAL, IntPtr.Zero);
             result.CheckFMOD();
 
-            result = system.setCallback(DeviceListCallback, SYSTEM_CALLBACK_TYPE.DEVICELISTCHANGED | SYSTEM_CALLBACK_TYPE.DEVICELOST);
+            callback = new SYSTEM_CALLBACK(DeviceListCallback);
+            result = system.setCallback(callback, SYSTEM_CALLBACK_TYPE.DEVICELISTCHANGED | SYSTEM_CALLBACK_TYPE.DEVICELOST);
             result.CheckFMOD();
 
             On.Celeste.Audio.Update += OnAudioUpdate;
@@ -96,31 +100,24 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             if (system != null && Initialized)
             {
-                try {
-                    system.update().CheckFMOD();
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}");
-                }
+                system.update().CheckFMOD();
             }
         }
 
         public RESULT DeviceListCallback(nint systemraw, SYSTEM_CALLBACK_TYPE type, nint commanddata1, nint commanddata2, nint userdata)
         {
-            Logger.Verbose(nameof(OutputDeviceManager), "Got callback");
+            Logger.Verbose(nameof(AudioSplitterModule), $"Got callback {Enum.GetName(typeof(SYSTEM_CALLBACK_TYPE), type)}");
+
             try
             {
-                FetchDevices();
-                OnListUpdate();
+                OnListUpdate(FetchDevices());
+                return RESULT.OK;
             }
             catch (Exception e)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}");
+                Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}, stacktrace:\n{e.StackTrace.ToString()}");
                 return RESULT.OK;
             }
-
-            return RESULT.OK;
         }
 
         public void ReloadDeviceList()
@@ -128,6 +125,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
             system.getOutput(out OUTPUTTYPE outputtype);
             system.setOutput(OUTPUTTYPE.NOSOUND);
             system.setOutput(outputtype);
+            
+            OnListUpdate(FetchDevices());
         }
 
         public List<OutputDeviceInfo> FetchDevices()

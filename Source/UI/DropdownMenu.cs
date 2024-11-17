@@ -12,7 +12,7 @@ namespace Celeste.Mod.AudioSplitter.UI
     /// <typeparam name="T">Type of stored data</typeparam>
     public class DropdownMenu<T> : TextMenuExt.SubMenu
     {
-        public class Option
+        public class Option : IEquatable<Option>
         {
             public string Label;
             public T Value;
@@ -22,6 +22,8 @@ namespace Celeste.Mod.AudioSplitter.UI
                 Label = label;
                 Value = value;
             }
+
+            public bool Equals(Option other) => Value.Equals(other.Value);
         }
 
         private int index = 0;

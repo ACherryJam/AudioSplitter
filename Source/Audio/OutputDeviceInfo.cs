@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Celeste.Mod.AudioSplitter.Module;
 using FMOD;
 
 namespace Celeste.Mod.AudioSplitter.Audio
@@ -20,6 +21,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public RESULT Apply(FMOD.System system)
         {
+            Logger.Verbose(nameof(AudioSplitterModule), $"Setting device (Id {Id}, index {Index}) to system {system.getRaw()}");
             return system.setDriver(this.Index);
         }
 
