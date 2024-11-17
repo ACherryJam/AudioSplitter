@@ -117,8 +117,8 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             AudioSplitterModule.Instance.DeviceManager.OnListUpdate += (devices) => {
                 FillDropdownMenu(audioDevice, devices);
-                FillDropdownMenu(musicDevice, devices);
                 FillDropdownMenu(sfxDevice, devices);
+                FillDropdownMenu(musicDevice, devices);
 
                 // TODO: Move this to a better place??
                 if (!DuplicatorInitialized)
@@ -126,8 +126,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                     UpdateSystemDevice(audioDevice, devices, global::Celeste.Audio.System);
                 } else
                 {
-                    UpdateSystemDevice(musicDevice, devices, global::Celeste.Audio.System);
-                    UpdateSystemDevice(sfxDevice, devices, AudioSplitterModule.Instance.Duplicator.System);
+                    UpdateSystemDevice(sfxDevice, devices, global::Celeste.Audio.System);
+                    UpdateSystemDevice(musicDevice, devices, AudioSplitterModule.Instance.Duplicator.System);
                 }
             };
 
