@@ -12,8 +12,7 @@ MODOPTIONS_AUDIOSPLITTER_DISABLE_DUPLICATE=Выключить разделени
 
 MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST=Перезагрузить список устройств
 MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST_DESCRIPTION=
-Обновляет список устройств в меню выбора устройств, 
-если FMOD не сделал это автоматически за вас 
+Обновляет список устройств в меню выбора устройств, если FMOD не сделал это автоматически за вас 
 (что, к сожалению, случается довольно часто)
 
 MODOPTIONS_AUDIOSPLITTER_HEADER_DEVICESELECTION=Выбор устройства

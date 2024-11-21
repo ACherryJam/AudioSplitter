@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Celeste.Mod.AudioSplitter.Audio;
+using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.UI;
 
 namespace Celeste.Mod.AudioSplitter.Module
@@ -103,9 +104,10 @@ namespace Celeste.Mod.AudioSplitter.Module
             );
 
             // 3. Configure items
-            // TODO: This description looks ugly as fuck beacuse it renders in left parts
-            // so you either do a multiline or a huge one-liner breaks the menu. Write custom description ig?
             reloadDevices.AddDescription(menu, Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST_DESCRIPTION"));
+            var desc = reloadDevices.GetDescriptionText();
+            if (desc != null)
+                desc.IncludeWidthInMeasurement = false;
 
             // TODO: Fix dropdowns so that you can fill them without being contained in parent container
             var devices = AudioSplitterModule.Instance.DeviceManager.Devices;

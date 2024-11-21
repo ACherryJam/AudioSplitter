@@ -12,8 +12,7 @@ MODOPTIONS_AUDIOSPLITTER_DISABLE_DUPLICATE=Disable audio splitting
 
 MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST=Reload Device List
 MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST_DESCRIPTION=
-Reload the list of devices in device selectors 
-if FMOD didn't automatically do it for you 
+Reload the list of devices in device selectors if FMOD didn't automatically do it for you
 (which, sadly, happens quite often)
 
 MODOPTIONS_AUDIOSPLITTER_HEADER_DEVICESELECTION=Device Selection
