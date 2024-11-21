@@ -38,26 +38,26 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public override void Load()
         {
-            MultiLanguageFontHooks.Apply();
-            BankCache.ApplyHooks();
-            InstanceDuplicatorHooks.Apply();
-
-            On.Celeste.Audio.Init += OnAudioInit;
-            On.Celeste.Audio.Unload += OnAudioUnload;
-            On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
-
 #if DEBUG
             bool waitForDebugger = false;
             while (waitForDebugger && !Debugger.IsAttached)
                 continue;
 #endif
+
+            MultiLanguageFontHooks.Apply();
+            InstanceDuplicatorHooks.Apply();
+            BankCache.ApplyHooks();
+
+            On.Celeste.Audio.Init += OnAudioInit;
+            On.Celeste.Audio.Unload += OnAudioUnload;
+            On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
         }
 
     public override void Unload()
         {
             MultiLanguageFontHooks.Remove();
-
             InstanceDuplicatorHooks.Remove();
+
             DeviceManager.Terminate();
             Duplicator.Terminate();
         }
