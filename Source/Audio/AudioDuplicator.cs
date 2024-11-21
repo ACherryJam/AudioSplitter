@@ -128,7 +128,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                     vca.setVolume(newVolume.Value);
                 vca.getVolume(out volume, out _);
             }
-            else 
+            else
             {
                 Logger.Error(nameof(AudioSplitterModule), "Failed to get VCA for VCAVolume");
             }

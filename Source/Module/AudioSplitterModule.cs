@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Reflection;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.UI;
-using FMOD;
 using FMOD.Studio;
-using MonoMod.RuntimeDetour;
 
 using CelesteAudio = global::Celeste.Audio;
 
@@ -53,7 +50,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
         }
 
-    public override void Unload()
+        public override void Unload()
         {
             MultiLanguageFontHooks.Remove();
             InstanceDuplicatorHooks.Remove();
@@ -79,7 +76,7 @@ namespace Celeste.Mod.AudioSplitter.Module
         private void OnAudioInit(On.Celeste.Audio.orig_Init orig)
         {
             DeviceManager.Initialize();
-            
+
             orig();
 
             if (Settings.EnableOnStartup)
@@ -99,7 +96,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             // If duplicator is not active, just control the original VCA
             if (!Duplicator.Initialized)
                 return orig(path, volume);
-            
+
             // Forward sounds to original and music to duplicator
             if (path == "vca:/gameplay_sfx" || path == "vca:/ui_sfx")
             {
@@ -132,7 +129,7 @@ namespace Celeste.Mod.AudioSplitter.Module
                 Duplicator.Terminate();
                 Settings.AudioOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
             }
-            
+
             global::Celeste.Settings.Instance.ApplyVolumes();
         }
     }

@@ -47,7 +47,7 @@ namespace Celeste.Mod.AudioSplitter.UI
         // Why aren't Icon and ease protected? :thinking:
         private FieldInfo arrowIconInfo = null;
         private FieldInfo easeInfo = null;
-        
+
         protected MTexture arrowIcon
         {
             get
@@ -124,7 +124,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             if (width > maxWidth)
             {
                 int length = label.Length;
-                
+
                 while (length > 0 && MultiLanguageFont.Measure(label + "...").X > maxWidth)
                     label = label.Substring(0, --length);
                 label += "...";

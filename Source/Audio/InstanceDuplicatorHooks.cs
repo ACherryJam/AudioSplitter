@@ -1,10 +1,10 @@
-﻿using Celeste.Mod.AudioSplitter.Module;
-using System.Runtime.InteropServices;
-using System;
-using Celeste.Mod.AudioSplitter.Utility;
-using FMOD.Studio;
-using FMOD;
+﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Celeste.Mod.AudioSplitter.Module;
+using Celeste.Mod.AudioSplitter.Utility;
+using FMOD;
+using FMOD.Studio;
 
 namespace Celeste.Mod.AudioSplitter.Audio
 {

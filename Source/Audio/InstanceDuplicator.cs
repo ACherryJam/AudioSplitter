@@ -110,7 +110,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             description.getParameterCount(out var parameterCount);
 
             float[] parameterValues = new float[parameterCount];
-            for (int index = 0; index <  parameterCount; index++)
+            for (int index = 0; index < parameterCount; index++)
             {
                 original.getParameterValueByIndex(index, out float value, out _);
                 parameterValues[index] = value;

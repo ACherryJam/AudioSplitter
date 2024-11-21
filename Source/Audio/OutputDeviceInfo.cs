@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Celeste.Mod.AudioSplitter.Module;
 using FMOD;
 
@@ -16,8 +15,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public override bool Equals(object obj) => Equals((OutputDeviceInfo)obj);
         public bool Equals(OutputDeviceInfo info) => Id == info.Id;
 
-        public static bool operator==(OutputDeviceInfo left, OutputDeviceInfo right) => left.Equals(right);
-        public static bool operator!=(OutputDeviceInfo left, OutputDeviceInfo right) => !left.Equals(right);
+        public static bool operator ==(OutputDeviceInfo left, OutputDeviceInfo right) => left.Equals(right);
+        public static bool operator !=(OutputDeviceInfo left, OutputDeviceInfo right) => !left.Equals(right);
 
         public RESULT Apply(FMOD.System system)
         {

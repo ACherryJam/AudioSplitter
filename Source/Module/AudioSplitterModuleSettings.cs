@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.UI;
 
@@ -48,19 +47,22 @@ namespace Celeste.Mod.AudioSplitter.Module
         {
             // 1. Create menu items
             var audioDevice = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_AUDIO_DEVICE"))
-                .Change((device) => {
+                .Change((device) =>
+                {
                     AudioOutputDevice = device;
                     AudioOutputDevice.Apply(global::Celeste.Audio.System);
                 });
 
             var sfxDevice = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_SFX_DEVICE"))
-                .Change((device) => {
+                .Change((device) =>
+                {
                     SFXOutputDevice = device;
-                    SFXOutputDevice.Apply(global::Celeste.Audio.System); 
+                    SFXOutputDevice.Apply(global::Celeste.Audio.System);
                 });
 
             var musicDevice = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_MUSIC_DEVICE"))
-                .Change((device) => {
+                .Change((device) =>
+                {
                     MusicOutputDevice = device;
                     MusicOutputDevice.Apply(AudioSplitterModule.Instance.Duplicator.System);
                 });
@@ -104,7 +106,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             // TODO: This description looks ugly as fuck beacuse it renders in left parts
             // so you either do a multiline or a huge one-liner breaks the menu. Write custom description ig?
             reloadDevices.AddDescription(menu, Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST_DESCRIPTION"));
-            
+
             // TODO: Fix dropdowns so that you can fill them without being contained in parent container
             var devices = AudioSplitterModule.Instance.DeviceManager.Devices;
             FillDropdownMenu(audioDevice, devices);
@@ -115,7 +117,8 @@ namespace Celeste.Mod.AudioSplitter.Module
             musicDevice.OptionIndex = MusicOutputDevice.Index + (MusicOutputDevice != OutputDeviceInfo.DefaultDevice ? 1 : 0);
             sfxDevice.OptionIndex = SFXOutputDevice.Index + (SFXOutputDevice != OutputDeviceInfo.DefaultDevice ? 1 : 0);
 
-            AudioSplitterModule.Instance.DeviceManager.OnListUpdate += (devices) => {
+            AudioSplitterModule.Instance.DeviceManager.OnListUpdate += (devices) =>
+            {
                 FillDropdownMenu(audioDevice, devices);
                 FillDropdownMenu(sfxDevice, devices);
                 FillDropdownMenu(musicDevice, devices);
@@ -124,7 +127,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                 if (!DuplicatorInitialized)
                 {
                     UpdateSystemDevice(audioDevice, devices, global::Celeste.Audio.System);
-                } else
+                }
+                else
                 {
                     UpdateSystemDevice(sfxDevice, devices, global::Celeste.Audio.System);
                     UpdateSystemDevice(musicDevice, devices, AudioSplitterModule.Instance.Duplicator.System);

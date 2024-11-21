@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Module;
-using Celeste.Mod.AudioSplitter.Utility;
 using FMOD;
 using FMOD.Studio;
-using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 
 using CelesteAudio = global::Celeste.Audio;
 

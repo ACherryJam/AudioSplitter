@@ -125,7 +125,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             system.getOutput(out OUTPUTTYPE outputtype);
             system.setOutput(OUTPUTTYPE.NOSOUND);
             system.setOutput(outputtype);
-            
+
             OnListUpdate(FetchDevices());
         }
 

@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -18,7 +13,7 @@ namespace Celeste.Mod.AudioSplitter.UI
         public bool Focused = false;
         public bool PerformAction = false;
         public new Action OnPressed;
-        
+
         protected float ease;
         protected Wiggler wiggler;
 
@@ -39,7 +34,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 ease = Calc.Approach(this.ease, 1f, Engine.RawDeltaTime * 4f);
             else
                 ease = Calc.Approach(this.ease, 0f, Engine.RawDeltaTime * 4f);
-            
+
             if (Focused && ease > 0.9f)
             {
                 if (!Input.MenuConfirm.Pressed && (Input.MenuCancel.Pressed || Input.ESC.Pressed || Input.Pause.Pressed))
@@ -166,7 +161,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 position.X -= ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_YES")).X;
                 ActiveFont.DrawOutline(
                     Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_YES"),
-                    position + Vector2.UnitY * (PerformAction ? wiggler.Value : 0f) * 8f, 
+                    position + Vector2.UnitY * (PerformAction ? wiggler.Value : 0f) * 8f,
                     new Vector2(0f, 0.5f), Vector2.One,
                     (PerformAction ? Container.HighlightColor : Color.White) * alpha,
                     2f, strokeColor
@@ -176,7 +171,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 position.X -= ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_NO")).X;
                 ActiveFont.DrawOutline(
                     Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_NO"),
-                    position + Vector2.UnitY * (!PerformAction ? wiggler.Value : 0f) * 8f, 
+                    position + Vector2.UnitY * (!PerformAction ? wiggler.Value : 0f) * 8f,
                     new Vector2(0f, 0.5f), Vector2.One,
                     (!PerformAction ? Color.OrangeRed : Color.White) * alpha,
                     2f, strokeColor

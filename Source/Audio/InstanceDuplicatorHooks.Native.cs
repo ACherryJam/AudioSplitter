@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Module;
 using FMOD;
 using FMOD.Studio;
@@ -33,6 +31,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_Set3DAttributes"), new Sigs.Inst.HookedSet3DAttributes(NativeInstanceSet3DAttributes)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetCallback"), new Sigs.Inst.HookedSetCallback(NativeInstanceSetCallback)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetListenerMask"), new Sigs.Inst.HookedSetListenerMask(NativeInstanceSetListenerMask)),
+                // TODO: figure out why parameter setting breaks everything
                 //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValue"), new Sigs.Inst.HookedSetParameterValue(NativeInstanceSetParameterValue)),
                 //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValueByIndex"), new Sigs.Inst.HookedSetParameterValueByIndex(NativeInstanceSetParameterValueByIndex)),
                 //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValuesByIndices"), new Sigs.Inst.HookedSetParameterValuesByIndices(NativeInstanceSetParameterValuesByIndices)),
@@ -58,7 +57,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             foreach (var method in methods)
                 refs.Add(new(method.Item1, method.Item2, true));
             foreach (var method in afterMethods)
-                refs.Add(new(method.Item1, method.Item2, afterConfig, true));   
+                refs.Add(new(method.Item1, method.Item2, afterConfig, true));
         }
 
         private static void RemoveNative()
@@ -77,15 +76,15 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
 
             using (scope)
-            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
-            {
-                var duplicate = instanceDuplicater.GetDuplicate(new EventInstance(inst));
-                if (duplicate == null) continue;
+                foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
+                {
+                    var duplicate = instanceDuplicater.GetDuplicate(new EventInstance(inst));
+                    if (duplicate == null) continue;
 
-                result = duplicate.start();
-                result.CheckFMOD();
-                Logger.Verbose(nameof(AudioSplitterModule), $"Starting duplicate {duplicate.getRaw()}");
-            }
+                    result = duplicate.start();
+                    result.CheckFMOD();
+                    Logger.Verbose(nameof(AudioSplitterModule), $"Starting duplicate {duplicate.getRaw()}");
+                }
 
             return RESULT.OK;
         }
@@ -100,13 +99,13 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
 
             using (scope)
-            foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
-            {
-                var duplicate = instanceDuplicater.GetDuplicate(new EventInstance(inst));
-                if (duplicate == null) continue;
+                foreach (var instanceDuplicater in InstanceDuplicator.InitializedInstances)
+                {
+                    var duplicate = instanceDuplicater.GetDuplicate(new EventInstance(inst));
+                    if (duplicate == null) continue;
 
-                result = duplicate.stop(stop_mode);
-            }
+                    result = duplicate.stop(stop_mode);
+                }
 
             return RESULT.OK;
         }
