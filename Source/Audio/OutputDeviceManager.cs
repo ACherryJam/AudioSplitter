@@ -156,5 +156,16 @@ namespace Celeste.Mod.AudioSplitter.Audio
             devices = newDevices;
             return Devices;
         }
+
+        public RESULT SetDevice(OutputDeviceInfo device, FMOD.Studio.System system)
+        {
+            if (system == null)
+                return RESULT.OK;
+
+            if (!Devices.Contains(device))
+                return OutputDeviceInfo.DefaultDevice.Apply(system);
+            else
+                return device.Apply(system);
+        }
     }
 }

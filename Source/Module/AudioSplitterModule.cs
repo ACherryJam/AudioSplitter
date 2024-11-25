@@ -21,6 +21,8 @@ namespace Celeste.Mod.AudioSplitter.Module
         public AudioDuplicator Duplicator { get; private set; } = new AudioDuplicator();
         public OutputDeviceManager DeviceManager { get; private set; } = new OutputDeviceManager();
 
+        public bool Enabled => Duplicator.Initialized;
+
         public AudioSplitterModule()
         {
             Instance = this;
@@ -83,6 +85,8 @@ namespace Celeste.Mod.AudioSplitter.Module
             {
                 ToggleAudioDuplicator();
             }
+
+            DeviceManager.OnListUpdate += (_) => { ConfigureSystemDevices(); };
         }
 
         private void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
@@ -119,18 +123,25 @@ namespace Celeste.Mod.AudioSplitter.Module
         public void ToggleAudioDuplicator()
         {
             if (!Duplicator.Initialized)
-            {
                 Duplicator.Initialize();
-                Settings.SFXOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
-                Settings.MusicOutputDevice.Apply(Duplicator.System).CheckFMOD();
+            else
+                Duplicator.Terminate();
+
+            ConfigureSystemDevices();
+            global::Celeste.Settings.Instance.ApplyVolumes();
+        }        
+
+        public void ConfigureSystemDevices()
+        {
+            if (!Enabled)
+            {
+                DeviceManager.SetDevice(Settings.AudioOutputDevice, CelesteAudio.System);
             }
             else
             {
-                Duplicator.Terminate();
-                Settings.AudioOutputDevice.Apply(CelesteAudio.System).CheckFMOD();
+                DeviceManager.SetDevice(Settings.SFXOutputDevice, CelesteAudio.System);
+                DeviceManager.SetDevice(Settings.MusicOutputDevice, Duplicator.System);
             }
-
-            global::Celeste.Settings.Instance.ApplyVolumes();
         }
     }
 }
