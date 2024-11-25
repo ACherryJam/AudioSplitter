@@ -23,6 +23,8 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public bool Enabled => Duplicator.Initialized;
 
+        private AudioSplitterModulePresenter presenter = new();
+
         public AudioSplitterModule()
         {
             Instance = this;
@@ -72,7 +74,12 @@ namespace Celeste.Mod.AudioSplitter.Module
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
         {
             CreateModMenuSectionHeader(menu, inGame, snapshot);
-            Settings.CreateMenu(menu, inGame);
+
+            var view = new AudioSplitterModuleView();
+            presenter.Attach(view);
+            view.AddTo(menu, inGame);
+
+            menu.OnClose += () => { presenter.Detach(); };
         }
 
         private void OnAudioInit(On.Celeste.Audio.orig_Init orig)
