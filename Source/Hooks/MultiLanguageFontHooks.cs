@@ -1,5 +1,9 @@
-﻿using Celeste.Mod.AudioSplitter.Module;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using Celeste.Mod.AudioSplitter.Audio;
+using Celeste.Mod.AudioSplitter.Module;
 using Celeste.Mod.AudioSplitter.Utility;
+using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.AudioSplitter.Hooks
 {
@@ -9,26 +13,27 @@ namespace Celeste.Mod.AudioSplitter.Hooks
         public static void Apply()
         {
             On.Celeste.Dialog.PostLanguageLoad += OnPostLanguageLoad;
-            On.Celeste.LanguageSelectUI.SetNextLanguage += OnLanguageSelect;
+
+            // Hook font unload blocker last to let other mods do stuff
+            var afterConfig = new DetourConfig(nameof(InstanceDuplicatorHooks), after: new List<string> { "*" });
+            var context = new DetourConfigContext(afterConfig);
+            using (var scope = context.Use())
+            {
+                On.Celeste.Fonts.Unload += OnFontUnload;
+            }
         }
 
         [RemoveOnUnload]
         public static void Remove()
         {
             On.Celeste.Dialog.PostLanguageLoad -= OnPostLanguageLoad;
-            On.Celeste.LanguageSelectUI.SetNextLanguage -= OnLanguageSelect;
+            On.Celeste.Fonts.Unload -= OnFontUnload;
         }
 
-        public static void OnLanguageSelect(On.Celeste.LanguageSelectUI.orig_SetNextLanguage orig, LanguageSelectUI self, Language next)
+        [SuppressMessage("Usage", "CL0003", Justification = "Dropping original call is the goal")]
+        public static void OnFontUnload(On.Celeste.Fonts.orig_Unload orig, string face)
         {
-            if (Settings.Instance.Language != next.Id)
-            {
-                Language language = Dialog.Languages[Settings.Instance.Language];
-                Language language2 = Dialog.Languages["english"];
-                Fonts.Load(next.FontFace);
-                Settings.Instance.Language = next.Id;
-                Settings.Instance.ApplyLanguage();
-            }
+            // aaaaaaaand do nothing!
         }
 
         public static void OnPostLanguageLoad(On.Celeste.Dialog.orig_PostLanguageLoad orig)
@@ -37,7 +42,7 @@ namespace Celeste.Mod.AudioSplitter.Hooks
             foreach (Language lang in Dialog.Languages.Values)
             {
                 Fonts.Load(lang.FontFace);
-                Logger.Log(nameof(AudioSplitterModule), $"Loaded fontface {lang.FontFace} for language {lang.Label}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Loaded fontface {lang.FontFace} for language {lang.Label}");
             }
         }
     }
