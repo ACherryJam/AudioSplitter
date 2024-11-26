@@ -97,6 +97,7 @@ namespace Celeste.Mod.AudioSplitter.UI
         public override void Added()
         {
             this.Container.InnerContent = TextMenu.InnerContentMode.TwoColumn;
+            base.Added();
         }
 
         public DropdownMenu<T> Change(Action<T> action)

@@ -33,17 +33,14 @@ namespace Celeste.Mod.AudioSplitter.Module
             UpdateToggleDuplicatorLabel();
             ToggleDropdownVisibility();
 
-            UpdateDropdownDevices(view.AudioDeviceDropdown, Module.DeviceManager.Devices);
-            UpdateDropdownDevices(view.SFXDeviceDropdown, Module.DeviceManager.Devices);
-            UpdateDropdownDevices(view.MusicDeviceDropdown, Module.DeviceManager.Devices);
-
+            // Important: Set option first, update devices after!
             view.AudioDeviceDropdown.CurrentOption = new(Settings.AudioOutputDevice.Name, Settings.AudioOutputDevice);
             view.SFXDeviceDropdown.CurrentOption = new(Settings.SFXOutputDevice.Name, Settings.SFXOutputDevice);
             view.MusicDeviceDropdown.CurrentOption = new(Settings.MusicOutputDevice.Name, Settings.MusicOutputDevice);
 
-            //view.AudioDeviceDropdown.OptionIndex = GetDeviceIndex(Settings.AudioOutputDevice);
-            //view.SFXDeviceDropdown.OptionIndex = GetDeviceIndex(Settings.SFXOutputDevice);
-            //view.MusicDeviceDropdown.OptionIndex = GetDeviceIndex(Settings.MusicOutputDevice);
+            UpdateDropdownDevices(view.AudioDeviceDropdown, Module.DeviceManager.Devices);
+            UpdateDropdownDevices(view.SFXDeviceDropdown, Module.DeviceManager.Devices);
+            UpdateDropdownDevices(view.MusicDeviceDropdown, Module.DeviceManager.Devices);
 
             view.EnableOnStartupOnOff.Index = (Settings.EnableOnStartup ? 1 : 0);
         }
