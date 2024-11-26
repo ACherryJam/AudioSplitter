@@ -17,12 +17,14 @@ namespace Celeste.Mod.AudioSplitter.Audio
     {
         private static RecursionLocker locker = new();
 
+        [ApplyOnLoad]
         public static void Apply()
         {
             ApplyOn();
             ApplyNative();
         }
 
+        [RemoveOnUnload]
         public static void Remove()
         {
             RemoveOn();

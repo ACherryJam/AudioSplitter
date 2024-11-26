@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using Celeste.Mod.AudioSplitter.Audio;
-using Celeste.Mod.AudioSplitter.UI;
+using Celeste.Mod.AudioSplitter.Hooks;
+using Celeste.Mod.AudioSplitter.Utility;
 using FMOD.Studio;
-
+using IL.Monocle;
 using CelesteAudio = global::Celeste.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Module
@@ -45,30 +46,21 @@ namespace Celeste.Mod.AudioSplitter.Module
                 continue;
 #endif
 
-            MultiLanguageFontHooks.Apply();
-            InstanceDuplicatorHooks.Apply();
-            BankCache.ApplyHooks();
-
-            On.Celeste.Audio.Init += OnAudioInit;
-            On.Celeste.Audio.Unload += OnAudioUnload;
-            On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
+            HookAttribute.Invoke(typeof(ApplyOnLoadAttribute));
         }
 
         public override void Unload()
         {
-            MultiLanguageFontHooks.Remove();
-            InstanceDuplicatorHooks.Remove();
+            HookAttribute.Invoke(typeof(RemoveOnUnloadAttribute));
 
             DeviceManager.Terminate();
             Duplicator.Terminate();
         }
 
-        public override void LoadContent(bool firstLoad)
+        public override void Initialize()
         {
-            base.LoadContent(firstLoad);
-
-            if (!firstLoad)
-                return;
+            DeviceManager.Initialize();
+            DeviceManager.OnListUpdate += (_) => { ConfigureSystemDevices(); };
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
@@ -80,51 +72,6 @@ namespace Celeste.Mod.AudioSplitter.Module
             view.AddTo(menu, inGame);
 
             menu.OnClose += () => { presenter.Detach(); };
-        }
-
-        private void OnAudioInit(On.Celeste.Audio.orig_Init orig)
-        {
-            DeviceManager.Initialize();
-
-            orig();
-
-            if (Settings.EnableOnStartup)
-            {
-                ToggleAudioDuplicator();
-            }
-
-            DeviceManager.OnListUpdate += (_) => { ConfigureSystemDevices(); };
-        }
-
-        private void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
-        {
-            orig();
-            Duplicator.Terminate();
-        }
-
-        private float OnAudioVCAVolume(On.Celeste.Audio.orig_VCAVolume orig, string path, float? volume = null)
-        {
-            // If duplicator is not active, just control the original VCA
-            if (!Duplicator.Initialized)
-                return orig(path, volume);
-
-            // Forward sounds to original and music to duplicator
-            if (path == "vca:/gameplay_sfx" || path == "vca:/ui_sfx")
-            {
-                Duplicator.VCAVolume(path, 0);
-                return orig(path, volume);
-            }
-            else if (path == "vca:/music")
-            {
-                orig(path, 0);
-                return Duplicator.VCAVolume(path, volume);
-            }
-            else
-            {
-                // The rest of VCAs should go to both
-                Duplicator.VCAVolume(path, volume);
-                return orig(path, volume);
-            }
         }
 
         public void ToggleAudioDuplicator()
@@ -148,6 +95,63 @@ namespace Celeste.Mod.AudioSplitter.Module
             {
                 DeviceManager.SetDevice(Settings.SFXOutputDevice, CelesteAudio.System);
                 DeviceManager.SetDevice(Settings.MusicOutputDevice, Duplicator.System);
+            }
+        }
+
+        internal static class AudioSplitterModuleHooks
+        {
+            [ApplyOnLoad]
+            public static void Apply()
+            {
+                On.Celeste.Audio.Init += OnAudioInit;
+                On.Celeste.Audio.Unload += OnAudioUnload;
+                On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
+            }
+
+            [RemoveOnUnload]
+            public static void Remove()
+            {
+                On.Celeste.Audio.Init -= OnAudioInit;
+                On.Celeste.Audio.Unload -= OnAudioUnload;
+                On.Celeste.Audio.VCAVolume -= OnAudioVCAVolume;
+            }
+
+            public static void OnAudioInit(On.Celeste.Audio.orig_Init orig)
+            {
+                orig();
+                if (Settings.EnableOnStartup)
+                    Instance.ToggleAudioDuplicator();
+            }
+
+            public static void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
+            {
+                orig();
+                Instance.Duplicator.Terminate();
+            }
+
+            public static float OnAudioVCAVolume(On.Celeste.Audio.orig_VCAVolume orig, string path, float? volume = null)
+            {
+                // If duplicator is not active, just control the original VCA
+                if (!Instance.Enabled)
+                    return orig(path, volume);
+
+                // Forward sounds to original and music to duplicator
+                if (path == "vca:/gameplay_sfx" || path == "vca:/ui_sfx")
+                {
+                    Instance.Duplicator.VCAVolume(path, 0);
+                    return orig(path, volume);
+                }
+                else if (path == "vca:/music")
+                {
+                    orig(path, 0);
+                    return Instance.Duplicator.VCAVolume(path, volume);
+                }
+                else
+                {
+                    // The rest of VCAs should go to both
+                    Instance.Duplicator.VCAVolume(path, volume);
+                    return orig(path, volume);
+                }
             }
         }
     }

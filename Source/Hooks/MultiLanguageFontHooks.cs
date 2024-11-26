@@ -1,15 +1,18 @@
 ﻿using Celeste.Mod.AudioSplitter.Module;
+using Celeste.Mod.AudioSplitter.Utility;
 
-namespace Celeste.Mod.AudioSplitter.UI
+namespace Celeste.Mod.AudioSplitter.Hooks
 {
     public static class MultiLanguageFontHooks
     {
+        [ApplyOnLoad]
         public static void Apply()
         {
             On.Celeste.Dialog.PostLanguageLoad += OnPostLanguageLoad;
             On.Celeste.LanguageSelectUI.SetNextLanguage += OnLanguageSelect;
         }
 
+        [RemoveOnUnload]
         public static void Remove()
         {
             On.Celeste.Dialog.PostLanguageLoad -= OnPostLanguageLoad;

@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using Celeste.Mod.AudioSplitter.Module;
 using Celeste.Mod.AudioSplitter.Utility;
 using Celeste.Mod.Core;
@@ -21,6 +25,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
     /// </remarks>
     public class AudioDuplicator
     {
+        public static List<AudioDuplicator> Instances { get; private set; } = new();
+        public static List<AudioDuplicator> InitializedInstances => Instances.Where(x => x.Initialized).ToList();
+
         private FMOD.Studio.System system = null;
 
         private BankCache bankCache = null;
@@ -60,11 +67,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
             eventCache.LoadUsedDescriptions();
             instanceDuplicator.Initialize();
 
-            On.Celeste.Audio.GetEventDescription += OnAudioGetEventDescription;
-            On.Celeste.Audio.ReleaseUnusedDescriptions += OnAudioReleaseUnusedDescriptions;
-
-            ApplyHooks();
-
             Initialized = true;
         }
 
@@ -77,15 +79,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return;
 
             bankCache.UnloadBanks();
-
-            On.Celeste.Audio.GetEventDescription -= OnAudioGetEventDescription;
-            On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
             eventCache.Clear();
 
             instanceDuplicator.Terminate();
             instanceDuplicator.Clear();
-
-            RemoveHooks();
 
             system.release();
             system = null;
@@ -93,30 +90,12 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Initialized = false;
         }
 
-        private void Update()
+        public void Update()
         {
             if (system != null && Initialized)
             {
                 system.update().CheckFMOD();
             }
-        }
-
-        public void ApplyHooks()
-        {
-            On.Celeste.Audio.Update += OnAudioUpdate;
-            On.Celeste.Audio.BusMuted += OnAudioBusMuted;
-            On.Celeste.Audio.BusPaused += OnAudioBusPaused;
-            On.Celeste.Audio.BusStopAll += OnAudioBusStopAll;
-            On.Celeste.Audio.SetListenerPosition += OnAudioSetListenerPosition;
-        }
-
-        public void RemoveHooks()
-        {
-            On.Celeste.Audio.Update -= OnAudioUpdate;
-            On.Celeste.Audio.BusMuted -= OnAudioBusMuted;
-            On.Celeste.Audio.BusPaused -= OnAudioBusPaused;
-            On.Celeste.Audio.BusStopAll -= OnAudioBusStopAll;
-            On.Celeste.Audio.SetListenerPosition -= OnAudioSetListenerPosition;
         }
 
         public float VCAVolume(string path, float? newVolume = null)
@@ -135,43 +114,31 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return volume;
         }
 
-        private void OnAudioUpdate(On.Celeste.Audio.orig_Update origUpdate)
-        {
-            origUpdate();
-            Update();
-        }
-
-        private bool OnAudioBusMuted(On.Celeste.Audio.orig_BusMuted orig, string path, bool? mute = null)
+        public void BusMute(string path, bool? mute)
         {
             if (mute != null && system != null && system.getBus(path, out Bus bus) == RESULT.OK)
             {
                 bus.setMute(mute.Value);
             }
-
-            return orig(path, mute);
         }
 
-        private bool OnAudioBusPaused(On.Celeste.Audio.orig_BusPaused orig, string path, bool? pause = null)
+        public void BusPause(string path, bool? pause)
         {
             if (pause != null && system != null && system.getBus(path, out Bus bus) == RESULT.OK)
             {
                 bus.setPaused(pause.Value);
             }
-
-            return orig(path, pause);
         }
 
-        private void OnAudioBusStopAll(On.Celeste.Audio.orig_BusStopAll orig, string path, bool immediate = false)
+        public void BusStopAll(string path, bool immediate)
         {
             if (system != null && system.getBus(path, out Bus bus) == RESULT.OK)
             {
                 bus.stopAllEvents(immediate ? STOP_MODE.IMMEDIATE : STOP_MODE.ALLOWFADEOUT);
             }
-
-            orig(path, immediate);
         }
 
-        private void OnAudioSetListenerPosition(On.Celeste.Audio.orig_SetListenerPosition orig, Vector3 forward, Vector3 up, Vector3 position)
+        public void SetListenerPosition(Vector3 forward, Vector3 up, Vector3 position)
         {
             FMOD.Studio._3D_ATTRIBUTES attributes = new FMOD.Studio._3D_ATTRIBUTES
             {
@@ -180,21 +147,89 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 up = new VECTOR { x = up.X, y = up.Y, z = up.Z },
             };
             system.setListenerAttributes(0, attributes);
-
-            orig(forward, up, position);
         }
 
-        private EventDescription OnAudioGetEventDescription(On.Celeste.Audio.orig_GetEventDescription orig, string path)
+        internal static class AudioDuplicatorHooks
         {
-            eventCache.LoadEventDescription(path);
-            return orig(path);
-        }
+            [ApplyOnLoad]
+            public static void Apply()
+            {
+                On.Celeste.Audio.Update += OnAudioUpdate;
 
-        private void OnAudioReleaseUnusedDescriptions(On.Celeste.Audio.orig_ReleaseUnusedDescriptions orig)
-        {
-            if (CoreModule.Settings.UnloadUnusedAudio)
-                eventCache.ReleaseUnusedDescriptions();
-            orig();
+                On.Celeste.Audio.GetEventDescription += OnAudioGetEventDescription;
+                On.Celeste.Audio.ReleaseUnusedDescriptions += OnAudioReleaseUnusedDescriptions;
+
+                On.Celeste.Audio.BusMuted += OnAudioBusMuted;
+                On.Celeste.Audio.BusPaused += OnAudioBusPaused;
+                On.Celeste.Audio.BusStopAll += OnAudioBusStopAll;
+                On.Celeste.Audio.SetListenerPosition += OnAudioSetListenerPosition;
+            }
+
+            [RemoveOnUnload]
+            public static void Remove()
+            {
+                On.Celeste.Audio.Update -= OnAudioUpdate;
+
+                On.Celeste.Audio.GetEventDescription -= OnAudioGetEventDescription;
+                On.Celeste.Audio.ReleaseUnusedDescriptions -= OnAudioReleaseUnusedDescriptions;
+
+                On.Celeste.Audio.BusMuted -= OnAudioBusMuted;
+                On.Celeste.Audio.BusPaused -= OnAudioBusPaused;
+                On.Celeste.Audio.BusStopAll -= OnAudioBusStopAll;
+                On.Celeste.Audio.SetListenerPosition -= OnAudioSetListenerPosition;
+            }
+
+            public static void OnAudioUpdate(On.Celeste.Audio.orig_Update orig)
+            {
+                orig();
+                foreach (var instance in InitializedInstances)
+                    instance.Update();
+            }
+
+            public static EventDescription OnAudioGetEventDescription(On.Celeste.Audio.orig_GetEventDescription orig, string path)
+            {
+                foreach (var instance in InitializedInstances)
+                    instance.eventCache.LoadEventDescription(path);
+                return orig(path);
+            }
+
+            public static void OnAudioReleaseUnusedDescriptions(On.Celeste.Audio.orig_ReleaseUnusedDescriptions orig)
+            {
+                if (CoreModule.Settings.UnloadUnusedAudio)
+                {
+                    foreach (var instance in InitializedInstances)
+                        instance.eventCache.ReleaseUnusedDescriptions();
+                }
+                orig();
+            }
+
+            public static bool OnAudioBusMuted(On.Celeste.Audio.orig_BusMuted orig, string path, bool? mute = null)
+            {
+                foreach (var instance in InitializedInstances)
+                    instance.BusMute(path, mute);
+                return orig(path, mute);
+            }
+
+            public static bool OnAudioBusPaused(On.Celeste.Audio.orig_BusPaused orig, string path, bool? pause = null)
+            {
+                foreach (var instance in InitializedInstances)
+                    instance.BusPause(path, pause);
+                return orig(path, pause);
+            }
+
+            public static void OnAudioBusStopAll(On.Celeste.Audio.orig_BusStopAll orig, string path, bool immediate = false)
+            {
+                foreach (var instance in InitializedInstances)
+                    instance.BusStopAll(path, immediate);
+                orig(path, immediate);
+            }
+
+            public static void OnAudioSetListenerPosition(On.Celeste.Audio.orig_SetListenerPosition orig, Vector3 forward, Vector3 up, Vector3 position)
+            {
+                foreach (var instance in InitializedInstances)
+                    instance.SetListenerPosition(forward, up, position);
+                orig(forward, up, position);
+            }
         }
     }
 }

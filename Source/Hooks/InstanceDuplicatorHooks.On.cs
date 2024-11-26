@@ -14,24 +14,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             On.FMOD.Studio.EventDescription.createInstance += OnInstanceCreate;
 
-            //On.FMOD.Studio.EventInstance.start += OnInstanceStart;
-            //On.FMOD.Studio.EventInstance.stop += OnInstanceStop;
-            //On.FMOD.Studio.EventInstance.release += OnInstanceRelease;
-            //On.FMOD.Studio.EventInstance.triggerCue += OnInstanceTriggerCue;
-            //On.FMOD.Studio.EventInstance.set3DAttributes += OnInstanceSet3DAttributes;
-            //On.FMOD.Studio.EventInstance.setListenerMask += OnInstanceSetListenerMask;
+            // TODO: replace these with native hooks
             On.FMOD.Studio.EventInstance.setParameterValue += OnInstanceSetParameterValue;
             On.FMOD.Studio.EventInstance.setParameterValueByIndex += OnInstanceSetParameterValueByIndex;
             On.FMOD.Studio.EventInstance.setParameterValuesByIndices += OnInstanceSetParameterValuesByIndices;
-            //On.FMOD.Studio.EventInstance.setPaused += OnInstanceSetPaused;
-            //On.FMOD.Studio.EventInstance.setPitch += OnInstanceSetPitch;
-            //On.FMOD.Studio.EventInstance.setProperty += OnInstanceSetProperty;
-            //On.FMOD.Studio.EventInstance.setReverbLevel += OnInstanceSetReverbLevel;
-            //On.FMOD.Studio.EventInstance.setTimelinePosition += OnInstanceSetTimelinePosition;
-            //On.FMOD.Studio.EventInstance.setUserData += OnInstanceSetUserData;
-            //On.FMOD.Studio.EventInstance.setVolume += OnInstanceSetVolume;
-
-            //On.FMOD.Studio.EventInstance.setCallback += OnInstanceSetCallback;
 
             On.Celeste.Audio.Banks.Load += SetCallbacksToLoadedVanillaBank;
             On.Celeste.Audio.IngestBank += SetCallbacksToLoadedModdedBank;
@@ -41,24 +27,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             On.FMOD.Studio.EventDescription.createInstance -= OnInstanceCreate;
 
-            //On.FMOD.Studio.EventInstance.start -= OnInstanceStart;
-            //On.FMOD.Studio.EventInstance.stop -= OnInstanceStop;
-            //On.FMOD.Studio.EventInstance.release -= OnInstanceRelease;
-            //On.FMOD.Studio.EventInstance.triggerCue -= OnInstanceTriggerCue;
-            //On.FMOD.Studio.EventInstance.set3DAttributes -= OnInstanceSet3DAttributes;
-            //On.FMOD.Studio.EventInstance.setListenerMask -= OnInstanceSetListenerMask;
             On.FMOD.Studio.EventInstance.setParameterValue -= OnInstanceSetParameterValue;
             On.FMOD.Studio.EventInstance.setParameterValueByIndex -= OnInstanceSetParameterValueByIndex;
             On.FMOD.Studio.EventInstance.setParameterValuesByIndices -= OnInstanceSetParameterValuesByIndices;
-            //On.FMOD.Studio.EventInstance.setPaused -= OnInstanceSetPaused;
-            //On.FMOD.Studio.EventInstance.setPitch -= OnInstanceSetPitch;
-            //On.FMOD.Studio.EventInstance.setProperty -= OnInstanceSetProperty;
-            //On.FMOD.Studio.EventInstance.setReverbLevel -= OnInstanceSetReverbLevel;
-            //On.FMOD.Studio.EventInstance.setTimelinePosition -= OnInstanceSetTimelinePosition;
-            //On.FMOD.Studio.EventInstance.setUserData -= OnInstanceSetUserData;
-            //On.FMOD.Studio.EventInstance.setVolume -= OnInstanceSetVolume;
-
-            On.FMOD.Studio.EventInstance.setCallback -= OnInstanceSetCallback;
 
             On.Celeste.Audio.Banks.Load -= SetCallbacksToLoadedVanillaBank;
             On.Celeste.Audio.IngestBank -= SetCallbacksToLoadedModdedBank;
