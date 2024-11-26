@@ -21,6 +21,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             On.Celeste.Audio.Banks.Load += SetCallbacksToLoadedVanillaBank;
             On.Celeste.Audio.IngestBank += SetCallbacksToLoadedModdedBank;
+
+            On.Celeste.Audio.Unload += OnAudioUnload;
+            Everest.Events.Celeste.OnShutdown += OnCelesteShutdown;
         }
 
         public static void RemoveOn()
@@ -33,6 +36,20 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             On.Celeste.Audio.Banks.Load -= SetCallbacksToLoadedVanillaBank;
             On.Celeste.Audio.IngestBank -= SetCallbacksToLoadedModdedBank;
+
+            On.Celeste.Audio.Unload -= OnAudioUnload;
+            Everest.Events.Celeste.OnShutdown -= OnCelesteShutdown;
+        }
+
+        private static void OnCelesteShutdown()
+        {
+            CallbackWrapper.FreeCallbackWrapperGCHandles();
+        }
+
+        private static void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
+        {
+            orig();
+            CallbackWrapper.FreeCallbackWrapperGCHandles();
         }
 
         private static RESULT OnInstanceCreate(On.FMOD.Studio.EventDescription.orig_createInstance orig, EventDescription origDesc, out EventInstance origInst)
@@ -432,24 +449,13 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return RESULT.OK;
         }
 
-        private static void SetCallbacksToBank(Bank bank)
-        {
-            // Apply an empty callback to all EventDescriptions in the bank
-            // setCallback hooks will wrap these into EVENT_DESTROYED callbacks
-            bank.getEventList(out var descriptions);
-            foreach (EventDescription description in descriptions)
-            {
-                description.setCallback(emptyCallback, 0).CheckFMOD();
-            }
-        }
-
         private static Bank SetCallbacksToLoadedModdedBank(On.Celeste.Audio.orig_IngestBank orig, ModAsset asset)
         {
             bool needToSetCallbacks = !CelesteAudio.Banks.ModCache.TryGetValue(asset, out _);
 
             Bank bank = orig(asset);
             if (needToSetCallbacks)
-                SetCallbacksToBank(bank);
+                CallbackWrapper.SetCallbacksToBank(bank);
 
             return bank;
         }
@@ -460,7 +466,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             Bank bank = orig(name, loadStrings);
             if (needToSetCallbacks)
-                SetCallbacksToBank(bank);
+                CallbackWrapper.SetCallbacksToBank(bank);
 
             return bank;
         }

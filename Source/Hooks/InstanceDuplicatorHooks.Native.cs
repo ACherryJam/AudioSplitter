@@ -449,7 +449,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             IntPtr eventInstance, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            var wrapped = WrapEventCallback(callback, callbackmask);
+            var wrapped = CallbackWrapper.WrapInstanceEventCallback(eventInstance, callback, callbackmask);
             return setCallback(eventInstance, wrapped.Item1, wrapped.Item2);
         }
 
@@ -458,7 +458,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             IntPtr eventDescription, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            var wrapped = WrapEventCallback(callback, callbackmask);
+            var wrapped = CallbackWrapper.WrapDescriptionEventCallback(eventDescription, callback, callbackmask);
             return setCallback(eventDescription, wrapped.Item1, wrapped.Item2);
         }
 
