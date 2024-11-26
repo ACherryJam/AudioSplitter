@@ -39,6 +39,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public bool Initialized { get; private set; } = false;
         public FMOD.Studio.System System => system;
 
+        public AudioDuplicator() => Instances.Add(this);
+        ~AudioDuplicator() => Instances.Remove(this);
+
         /// <summary>
         /// Load the audio data and apply the necessary hooks
         /// </summary>
