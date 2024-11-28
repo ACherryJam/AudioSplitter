@@ -26,6 +26,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
     public class AudioDuplicator
     {
         public static List<AudioDuplicator> Instances { get; private set; } = new();
+        public static List<AudioDuplicator> ReadyInstances => Instances.Where(x => x.Ready).ToList();
         public static List<AudioDuplicator> InitializedInstances => Instances.Where(x => x.Initialized).ToList();
 
         private FMOD.Studio.System system = null;
@@ -36,6 +37,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private RecursionLocker locker = new();
 
+        public bool Ready { get; private set; } = false;
         public bool Initialized { get; private set; } = false;
         public FMOD.Studio.System System => system;
 
@@ -70,6 +72,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             eventCache.LoadUsedDescriptions();
             instanceDuplicator.Initialize();
 
+            Ready = true;
             Initialized = true;
         }
 
@@ -80,6 +83,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             if (!Initialized)
                 return;
+
+            Ready = false;
 
             bankCache.UnloadBanks();
             eventCache.Clear();
@@ -95,7 +100,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public void Update()
         {
-            if (system != null && Initialized)
+            if (system != null && Ready)
             {
                 system.update().CheckFMOD();
             }
@@ -185,13 +190,13 @@ namespace Celeste.Mod.AudioSplitter.Audio
             public static void OnAudioUpdate(On.Celeste.Audio.orig_Update orig)
             {
                 orig();
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.Update();
             }
 
             public static EventDescription OnAudioGetEventDescription(On.Celeste.Audio.orig_GetEventDescription orig, string path)
             {
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.eventCache.LoadEventDescription(path);
                 return orig(path);
             }
@@ -200,7 +205,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             {
                 if (CoreModule.Settings.UnloadUnusedAudio)
                 {
-                    foreach (var instance in InitializedInstances)
+                    foreach (var instance in ReadyInstances)
                         instance.eventCache.ReleaseUnusedDescriptions();
                 }
                 orig();
@@ -208,28 +213,28 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             public static bool OnAudioBusMuted(On.Celeste.Audio.orig_BusMuted orig, string path, bool? mute = null)
             {
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.BusMute(path, mute);
                 return orig(path, mute);
             }
 
             public static bool OnAudioBusPaused(On.Celeste.Audio.orig_BusPaused orig, string path, bool? pause = null)
             {
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.BusPause(path, pause);
                 return orig(path, pause);
             }
 
             public static void OnAudioBusStopAll(On.Celeste.Audio.orig_BusStopAll orig, string path, bool immediate = false)
             {
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.BusStopAll(path, immediate);
                 orig(path, immediate);
             }
 
             public static void OnAudioSetListenerPosition(On.Celeste.Audio.orig_SetListenerPosition orig, Vector3 forward, Vector3 up, Vector3 position)
             {
-                foreach (var instance in InitializedInstances)
+                foreach (var instance in ReadyInstances)
                     instance.SetListenerPosition(forward, up, position);
                 orig(forward, up, position);
             }
