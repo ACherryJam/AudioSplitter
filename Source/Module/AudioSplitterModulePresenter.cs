@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.UI;
 
@@ -9,7 +10,7 @@ namespace Celeste.Mod.AudioSplitter.Module
         internal static AudioSplitterModule Module => AudioSplitterModule.Instance;
         internal static AudioSplitterModuleSettings Settings => AudioSplitterModule.Settings;
 
-        private AudioSplitterModuleView view;
+        private AudioSplitterModuleView view = null;
         
         public AudioSplitterModulePresenter() { }
 
@@ -65,10 +66,29 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             view.ToggleDuplicatorButton.Pressed(() =>
             {
-                Module.ToggleAudioDuplicator();
+                // FIXME: Feels like this should be an external API for presenter to call,
+                // gonna let it be here for now
+                LoadingMessage loading = new LoadingMessage(Celeste.Instance, default, new(20f, LoadingMessage.UI_HEIGHT - 20f));
 
-                ToggleDropdownVisibility();
-                UpdateToggleDuplicatorLabel();
+                var dialog = !Module.Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
+                loading.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
+
+                RunThread.Start(new Action(() =>
+                {
+                    if (view != null)
+                        view.ToggleDuplicatorButton.Disabled = true;
+                    loading.Add();
+
+                    Module.ToggleAudioDuplicator();
+
+                    if (view != null)
+                    {
+                        ToggleDropdownVisibility();
+                        UpdateToggleDuplicatorLabel();
+                        view.ToggleDuplicatorButton.Disabled = false;
+                    }
+                    loading.Remove();
+                }), "CJ_AUDIOSPLITTER_ToggleAudioDuplicator");
             });
 
             view.ReloadDevicesButton.Pressed(() => { Module.DeviceManager.ReloadDeviceList(); });

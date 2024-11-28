@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using Celeste.Mod.AudioSplitter.Audio;
-using Celeste.Mod.AudioSplitter.Hooks;
+using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Utility;
 using FMOD.Studio;
-using IL.Monocle;
 using CelesteAudio = global::Celeste.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Module
@@ -74,16 +73,19 @@ namespace Celeste.Mod.AudioSplitter.Module
             menu.OnClose += () => { presenter.Detach(); };
         }
 
+        private bool LoadingInProgress = false;
         public void ToggleAudioDuplicator()
         {
+            LoadingInProgress = true;
             if (!Duplicator.Initialized)
                 Duplicator.Initialize();
             else
                 Duplicator.Terminate();
+            LoadingInProgress = false;
 
             ConfigureSystemDevices();
             global::Celeste.Settings.Instance.ApplyVolumes();
-        }        
+        }
 
         public void ConfigureSystemDevices()
         {
@@ -106,6 +108,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                 On.Celeste.Audio.Init += OnAudioInit;
                 On.Celeste.Audio.Unload += OnAudioUnload;
                 On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
+
+                On.Celeste.OuiMainMenu.Update += DisableExitWhileLoading;
             }
 
             [RemoveOnUnload]
@@ -114,6 +118,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                 On.Celeste.Audio.Init -= OnAudioInit;
                 On.Celeste.Audio.Unload -= OnAudioUnload;
                 On.Celeste.Audio.VCAVolume -= OnAudioVCAVolume;
+
+                On.Celeste.OuiMainMenu.Update -= DisableExitWhileLoading;
             }
 
             public static void OnAudioInit(On.Celeste.Audio.orig_Init orig)
@@ -152,6 +158,28 @@ namespace Celeste.Mod.AudioSplitter.Module
                     Instance.Duplicator.VCAVolume(path, volume);
                     return orig(path, volume);
                 }
+            }
+
+            public static void DisableExitWhileLoading(On.Celeste.OuiMainMenu.orig_Update orig, OuiMainMenu self)
+            {
+                var exitButton = self.Buttons.Find(
+                    b => b.GetType() == typeof(MainMenuSmallButton)
+                    && ((MainMenuSmallButton)b).LabelName == "menu_exit"
+                );
+                if (exitButton != default(MenuButton))
+                {
+                    if (Instance.LoadingInProgress)
+                    {
+                        if (!exitButton.IsDisabled())
+                            exitButton.Disable();
+                    } else
+                    {
+                        if (exitButton.IsDisabled())
+                            exitButton.Enable();
+                    }
+                }
+
+                orig(self);
             }
         }
     }
