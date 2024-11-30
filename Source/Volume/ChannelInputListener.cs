@@ -11,7 +11,7 @@ namespace Celeste.Mod.AudioSplitter.Volume
         public event Action OnDecrease;
         public event Action OnIncrease;
 
-        private static readonly float holdingThreshold = 1f;
+        private static readonly float holdingThreshold = 0.6f;
         private static readonly float repeatSpeed = 0.1f;
 
         bool isHolding = false;

@@ -74,6 +74,7 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             menu.OnClose += () => { presenter.Detach(); };
 
+            menu.Add(new TextMenu.SubHeader(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_HEADER_HOTKEYS"), false));
             CreateModMenuSectionKeyBindings(menu, inGame, snapshot);
         }
 

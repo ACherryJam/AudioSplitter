@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.UI;
+using Celeste.Mod.AudioSplitter.Volume;
 
 namespace Celeste.Mod.AudioSplitter.Module
 {
@@ -44,6 +45,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             UpdateDropdownDevices(view.MusicDeviceDropdown, Module.DeviceManager.Devices);
 
             view.EnableOnStartupOnOff.Index = (Settings.EnableOnStartup ? 1 : 0);
+            view.VolumeViewOption.Index = (int)Settings.VolumeViewType;
         }
 
         private void AddEventsToElements()
@@ -93,6 +95,11 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             view.ReloadDevicesButton.Pressed(() => { Module.DeviceManager.ReloadDeviceList(); });
             view.EnableOnStartupOnOff.Change((value) => { Settings.EnableOnStartup = value; });
+
+            view.VolumeViewOption.Change((value) => { 
+                Settings.VolumeViewType = value;
+                VolumeChangeManager.RecreateView();
+            });
         }
 
         private void UpdateToggleDuplicatorLabel()
