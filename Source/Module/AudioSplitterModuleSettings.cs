@@ -1,3 +1,4 @@
+using System;
 using Celeste.Mod.AudioSplitter.Audio;
 
 namespace Celeste.Mod.AudioSplitter.Module
@@ -12,5 +13,12 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         // ===== Audio Splitting ===== //
         public bool EnableOnStartup { get; set; } = false;
+
+        // ===== Volume Changing ===== //
+        public ButtonBinding DecreaseSFXVolumeBinding { get; set; }
+        public ButtonBinding IncreaseSFXVolumeBinding { get; set; }
+
+        public ButtonBinding DecreaseMusicVolumeBinding { get; set; }
+        public ButtonBinding IncreaseMusicVolumeBinding { get; set; }
     }
 }

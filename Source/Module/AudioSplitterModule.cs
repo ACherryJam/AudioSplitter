@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.Extensions;
 using Celeste.Mod.AudioSplitter.Utility;
+using Celeste.Mod.AudioSplitter.Volume;
 using FMOD.Studio;
 using CelesteAudio = global::Celeste.Audio;
 
@@ -58,6 +59,7 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public override void Initialize()
         {
+            VolumeChangeManager.Initialize();
             DeviceManager.Initialize();
             DeviceManager.OnListUpdate += (_) => { ConfigureSystemDevices(); };
         }
@@ -71,6 +73,8 @@ namespace Celeste.Mod.AudioSplitter.Module
             view.AddTo(menu, inGame);
 
             menu.OnClose += () => { presenter.Detach(); };
+
+            CreateModMenuSectionKeyBindings(menu, inGame, snapshot);
         }
 
         private bool LoadingInProgress = false;
