@@ -115,8 +115,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 original.getParameterValueByIndex(index, out float value, out _);
                 parameterValues[index] = value;
             }
+
+            int[] parameterIndices = Enumerable.Range(0, parameterCount).ToArray();
             duplicate.setParameterValuesByIndices(
-                Enumerable.Range(0, parameterCount).ToArray(),
+                parameterIndices,
                 parameterValues,
                 parameterCount
             );
@@ -169,20 +171,26 @@ namespace Celeste.Mod.AudioSplitter.Audio
             loadedBanks.UnionWith(CelesteAudio.Banks.Banks.Values);
             loadedBanks.UnionWith(CelesteAudio.Banks.ModCache.Values);
 
+            // Banks may have duplicate event descriptions
+            HashSet<EventDescription> descriptions = new();
+
             foreach (Bank bank in loadedBanks)
             {
-                bank.getEventList(out EventDescription[] descriptions);
-                foreach (EventDescription desc in descriptions)
+                bank.getEventList(out EventDescription[] bankDescriptions);
+                foreach (EventDescription backDesc in bankDescriptions)
+                    descriptions.Add(backDesc);
+            }
+
+            foreach (EventDescription desc in descriptions)
+            {
+                desc.getID(out Guid id);
+                desc.getInstanceList(out EventInstance[] instances);
+                foreach (EventInstance inst in instances)
                 {
-                    desc.getID(out Guid id);
-                    desc.getInstanceList(out EventInstance[] instances);
-                    foreach (EventInstance inst in instances)
-                    {
-                        RESULT result = DuplicateInstance(id, inst);
-                        if (result != RESULT.OK)
-                            result.CheckFMOD();
-                        //CopyInstanceState(inst, duplicateInstances[inst]);
-                    }
+                    RESULT result = DuplicateInstance(id, inst);
+                    if (result != RESULT.OK)
+                        result.CheckFMOD();
+                    //CopyInstanceState(inst, duplicateInstances[inst]);
                 }
             }
         }

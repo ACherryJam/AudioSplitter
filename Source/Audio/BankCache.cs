@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Celeste.Mod.AudioSplitter.Utility;
 using FMOD.Studio;
 
 using CelesteAudio = global::Celeste.Audio;
@@ -9,17 +10,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
     public class BankCache
     {
         private static HashSet<string> banksNeedingStringLoading = new();
-        public static void ApplyHooks()
-        {
-            On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
-        }
-
-        static Bank OnAudioBanksLoad(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
-        {
-            if (loadStrings)
-                banksNeedingStringLoading.Add(name);
-            return orig(name, loadStrings);
-        }
 
         private Dictionary<string, Bank> bankCache = new();
 
@@ -53,6 +43,28 @@ namespace Celeste.Mod.AudioSplitter.Audio
             {
                 bank.unload();
                 bankCache.Remove(name);
+            }
+        }
+
+        internal static class BankCacheHooks
+        {
+            [ApplyOnLoad]
+            public static void ApplyHooks()
+            {
+                On.Celeste.Audio.Banks.Load += OnAudioBanksLoad;
+            }
+
+            [RemoveOnUnload]
+            public static void RemoveHooks()
+            {
+                On.Celeste.Audio.Banks.Load -= OnAudioBanksLoad;
+            }
+
+            static Bank OnAudioBanksLoad(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
+            {
+                if (loadStrings)
+                    banksNeedingStringLoading.Add(name);
+                return orig(name, loadStrings);
             }
         }
     }

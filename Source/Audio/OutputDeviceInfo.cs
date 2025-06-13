@@ -21,7 +21,20 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public RESULT Apply(FMOD.System system)
         {
             Logger.Verbose(nameof(AudioSplitterModule), $"Setting device (Id {Id}, index {Index}) to system {system.getRaw()}");
-            return system.setDriver(this.Index);
+
+            // FMOD won't change the driver if index is the same, gotta help it a little 
+            system.getDriver(out int driver);
+            if (driver == Index)
+            {
+                system.getOutput(out var output);
+                system.setOutput(OUTPUTTYPE.NOSOUND);
+                system.setOutput(output);
+                return RESULT.OK;
+            }
+            else
+            {
+                return system.setDriver(this.Index);
+            }
         }
 
         public RESULT Apply(FMOD.Studio.System system)

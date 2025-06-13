@@ -31,10 +31,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_Set3DAttributes"), new Sigs.Inst.HookedSet3DAttributes(NativeInstanceSet3DAttributes)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetCallback"), new Sigs.Inst.HookedSetCallback(NativeInstanceSetCallback)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetListenerMask"), new Sigs.Inst.HookedSetListenerMask(NativeInstanceSetListenerMask)),
-                // TODO: figure out why parameter setting breaks everything
-                //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValue"), new Sigs.Inst.HookedSetParameterValue(NativeInstanceSetParameterValue)),
-                //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValueByIndex"), new Sigs.Inst.HookedSetParameterValueByIndex(NativeInstanceSetParameterValueByIndex)),
-                //new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValuesByIndices"), new Sigs.Inst.HookedSetParameterValuesByIndices(NativeInstanceSetParameterValuesByIndices)),
+                new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValue"), new Sigs.Inst.HookedSetParameterValue(NativeInstanceSetParameterValue)),
+                new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValueByIndex"), new Sigs.Inst.HookedSetParameterValueByIndex(NativeInstanceSetParameterValueByIndex)),
+                new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetParameterValuesByIndices"), new Sigs.Inst.HookedSetParameterValuesByIndices(NativeInstanceSetParameterValuesByIndices)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetPaused"), new Sigs.Inst.HookedSetPaused(NativeInstanceSetPaused)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetPitch"), new Sigs.Inst.HookedSetPitch(NativeInstanceSetPitch)),
                 new(fmodLib.GetExport("FMOD_Studio_EventInstance_SetProperty"), new Sigs.Inst.HookedSetProperty(NativeInstanceSetProperty)),
@@ -221,18 +220,20 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT NativeInstanceSetParameterValue(
             Sigs.Inst.SetParameterValue orig,
-            IntPtr inst, byte[] name, float value
+            IntPtr inst, IntPtr name, float value
         )
         {
-            Logger.Verbose(nameof(AudioSplitterModule), $"Setting parameter value for instance {inst}, {Encoding.UTF8.GetString(name, 0, name.Length)}={value}");
+            string nameValue = Marshal.PtrToStringUTF8(name);
+            Logger.Verbose(nameof(AudioSplitterModule), $"Setting parameter value for instance {inst}, {nameValue}={value}");
+            
             RESULT result = orig(inst, name, value);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
-            if (!locker.TryEnter(nameof(OnInstanceSetParameterValue), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValue), out IDisposable scope))
                 return result;
 
             using (scope)
@@ -241,7 +242,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                     var duplicate = instanceDuplicater.GetDuplicate(new EventInstance(inst));
                     if (duplicate == null) continue;
 
-                    result = duplicate.setParameterValue(Encoding.UTF8.GetString(name), value);
+                    result = duplicate.setParameterValue(nameValue, value);
                 }
 
             return RESULT.OK;
@@ -256,7 +257,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             RESULT result = orig(inst, index, value);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter by index error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter by index error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
@@ -277,14 +278,22 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT NativeInstanceSetParameterValuesByIndices(
             Sigs.Inst.SetParameterValuesByIndices orig,
-            IntPtr inst, int[] indices, float[] values, int count
+            IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count
         )
         {
+            int[] indices = new int[count];
+            float[] values = new float[count];
+
+            if (indicesPtr != IntPtr.Zero)
+                Marshal.Copy(indicesPtr, indices, 0, count);
+            if (valuesPtr != IntPtr.Zero)
+                Marshal.Copy(valuesPtr, values, 0, count);
+            
             Logger.Verbose(nameof(AudioSplitterModule), $"Set parameters by indices instance {inst}");
-            RESULT result = orig(inst, indices, values, count);
+            RESULT result = orig(inst, indicesPtr, valuesPtr, count);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter by indices error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter by indices error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
@@ -449,7 +458,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             IntPtr eventInstance, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            var wrapped = WrapEventCallback(callback, callbackmask);
+            var wrapped = CallbackWrapper.WrapInstanceEventCallback(eventInstance, callback, callbackmask);
             return setCallback(eventInstance, wrapped.Item1, wrapped.Item2);
         }
 
@@ -458,7 +467,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             IntPtr eventDescription, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask
         )
         {
-            var wrapped = WrapEventCallback(callback, callbackmask);
+            var wrapped = CallbackWrapper.WrapDescriptionEventCallback(eventDescription, callback, callbackmask);
             return setCallback(eventDescription, wrapped.Item1, wrapped.Item2);
         }
 
@@ -486,20 +495,22 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT HookedSetListenerMask(SetListenerMask orig, IntPtr inst, uint mask);
 
+                // Have to make `name` IntPtr instead of byte[] because the delegate gets only the first character
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT SetParameterValue(IntPtr inst, byte[] name, float value);
+                public delegate RESULT SetParameterValue(IntPtr inst, IntPtr name, float value);
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT HookedSetParameterValue(SetParameterValue orig, IntPtr inst, byte[] name, float value);
+                public delegate RESULT HookedSetParameterValue(SetParameterValue orig, IntPtr inst, IntPtr name, float value);
 
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT SetParameterValueByIndex(IntPtr inst, int index, float value);
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT HookedSetParameterValueByIndex(SetParameterValueByIndex orig, IntPtr inst, int index, float value);
 
+                // Have to change arrays to IntPtr because the delegate gets only the first value
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT SetParameterValuesByIndices(IntPtr inst, int[] indices, float[] values, int count);
+                public delegate RESULT SetParameterValuesByIndices(IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count);
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT HookedSetParameterValuesByIndices(SetParameterValuesByIndices orig, IntPtr inst, int[] indices, float[] values, int count);
+                public delegate RESULT HookedSetParameterValuesByIndices(SetParameterValuesByIndices orig, IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count);
 
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT SetPaused(IntPtr inst, bool paused);

@@ -4,12 +4,16 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Celeste.Mod.AudioSplitter.Module;
+using Celeste.Mod.AudioSplitter.Utility;
 using FMOD;
 
 namespace Celeste.Mod.AudioSplitter.Audio
 {
     public class OutputDeviceManager
     {
+        public static List<OutputDeviceManager> Instances { get; private set; } = new();
+        public static List<OutputDeviceManager> InitializedInstances => Instances.Where(x => x.Initialized).ToList();
+
         /// <summary>
         /// System to set DEVICE_LIST_CHANGED callbacks to, won't play any audio
         /// </summary>
@@ -33,6 +37,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         // ref to not get freed by GC (GC is such a pain)
         private SYSTEM_CALLBACK callback;
+
+        public OutputDeviceManager() => Instances.Add(this);
+        ~OutputDeviceManager() => Instances.Remove(this);
 
         public void Initialize()
         {
@@ -70,7 +77,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
             result = system.setCallback(callback, SYSTEM_CALLBACK_TYPE.DEVICELISTCHANGED | SYSTEM_CALLBACK_TYPE.DEVICELOST);
             result.CheckFMOD();
 
-            On.Celeste.Audio.Update += OnAudioUpdate;
             FetchDevices();
 
             Logger.Verbose(nameof(OutputDeviceManager), "Initialized system");
@@ -82,18 +88,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!Initialized)
                 return;
 
-            On.Celeste.Audio.Update -= OnAudioUpdate;
-
             system.release();
             system = null;
 
             Initialized = false;
-        }
-
-        public void OnAudioUpdate(On.Celeste.Audio.orig_Update origUpdate)
-        {
-            origUpdate();
-            Update();
         }
 
         public void Update()
@@ -155,6 +153,39 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             devices = newDevices;
             return Devices;
+        }
+
+        public RESULT SetDevice(OutputDeviceInfo device, FMOD.Studio.System system)
+        {
+            if (system == null)
+                return RESULT.OK;
+
+            if (!Devices.Contains(device))
+                return OutputDeviceInfo.DefaultDevice.Apply(system);
+            else
+                return device.Apply(system);
+        }
+
+        internal static class OutputDeviceManagerHooks
+        {
+            [ApplyOnLoad]
+            public static void Apply()
+            {
+                On.Celeste.Audio.Update += OnAudioUpdate;
+            }
+
+            [RemoveOnUnload]
+            public static void Remove()
+            {
+                On.Celeste.Audio.Update -= OnAudioUpdate;
+            }
+
+            public static void OnAudioUpdate(On.Celeste.Audio.orig_Update orig)
+            {
+                orig();
+                foreach (var instance in InitializedInstances)
+                    instance.Update();
+            }
         }
     }
 }

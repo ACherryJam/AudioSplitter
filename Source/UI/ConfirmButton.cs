@@ -76,6 +76,11 @@ namespace Celeste.Mod.AudioSplitter.UI
         {
             if (!Focused)
             {
+                if (Disabled)
+                {
+                    global::Celeste.Audio.Play("event:/ui/main/button_invalid");
+                    return;
+                }
                 Container.Focused = false;
                 Focused = true;
                 wiggler.StopAndClear();
