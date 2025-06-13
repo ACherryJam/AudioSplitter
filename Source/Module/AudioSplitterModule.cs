@@ -74,20 +74,6 @@ namespace Celeste.Mod.AudioSplitter.Module
             }
         }
 
-        private void ShowLoadingMessageOnLoading(bool loading)
-        {
-            if (loading)
-            {
-                var dialog = !Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
-                loadingMessage.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
-                loadingMessage.Add();
-            }
-            else
-            {
-                loadingMessage.Remove();
-            }
-        }
-
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
         {
             CreateModMenuSectionHeader(menu, inGame, snapshot);
@@ -123,7 +109,6 @@ namespace Celeste.Mod.AudioSplitter.Module
             );
             thread.Start();
         }
-        
 
         public void ConfigureSystemDevices()
         {
@@ -135,6 +120,25 @@ namespace Celeste.Mod.AudioSplitter.Module
             {
                 DeviceManager.SetDevice(Settings.SFXOutputDevice, CelesteAudio.System);
                 DeviceManager.SetDevice(Settings.MusicOutputDevice, Duplicator.System);
+            }
+        }
+
+        private void UpdateLoadingMessageText()
+        {
+            var dialog = !Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
+            loadingMessage.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
+        }
+
+        private void ShowLoadingMessageOnLoading(bool loading)
+        {
+            if (loading)
+            {
+                UpdateLoadingMessageText();
+                loadingMessage.Add();
+            }
+            else
+            {
+                loadingMessage.Remove();
             }
         }
 
@@ -150,6 +154,13 @@ namespace Celeste.Mod.AudioSplitter.Module
                 On.Celeste.OuiMainMenu.Update += DisableExitWhileLoading;
 
                 On.Celeste.Overworld.ctor += Overworld_ctor;
+                On.Celeste.Settings.ApplyLanguage += Settings_ApplyLanguage;
+            }
+
+            public static void Settings_ApplyLanguage(On.Celeste.Settings.orig_ApplyLanguage orig, Settings self)
+            {
+                orig(self);
+                Instance.UpdateLoadingMessageText();
             }
 
             [RemoveOnUnload]
