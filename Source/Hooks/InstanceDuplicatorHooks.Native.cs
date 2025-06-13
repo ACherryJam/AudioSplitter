@@ -229,7 +229,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             RESULT result = orig(inst, name, value);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
@@ -257,7 +257,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             RESULT result = orig(inst, index, value);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter by index error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter by index error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
@@ -293,7 +293,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             RESULT result = orig(inst, indicesPtr, valuesPtr, count);
             if (result != RESULT.OK)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Set parameter by indices error {Enum.GetName(typeof(RESULT), result)}");
+                Logger.Verbose(nameof(AudioSplitterModule), $"Set parameter by indices error {Enum.GetName(typeof(RESULT), result)}");
                 return result;
             }
 
