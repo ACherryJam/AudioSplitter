@@ -115,8 +115,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 original.getParameterValueByIndex(index, out float value, out _);
                 parameterValues[index] = value;
             }
+
+            int[] parameterIndices = Enumerable.Range(0, parameterCount).ToArray();
             duplicate.setParameterValuesByIndices(
-                Enumerable.Range(0, parameterCount).ToArray(),
+                parameterIndices,
                 parameterValues,
                 parameterCount
             );

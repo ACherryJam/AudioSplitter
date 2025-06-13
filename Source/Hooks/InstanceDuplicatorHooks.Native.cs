@@ -278,11 +278,19 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private static RESULT NativeInstanceSetParameterValuesByIndices(
             Sigs.Inst.SetParameterValuesByIndices orig,
-            IntPtr inst, int[] indices, float[] values, int count
+            IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count
         )
         {
+            int[] indices = new int[count];
+            float[] values = new float[count];
+
+            if (indicesPtr != IntPtr.Zero)
+                Marshal.Copy(indicesPtr, indices, 0, count);
+            if (valuesPtr != IntPtr.Zero)
+                Marshal.Copy(valuesPtr, values, 0, count);
+            
             Logger.Verbose(nameof(AudioSplitterModule), $"Set parameters by indices instance {inst}");
-            RESULT result = orig(inst, indices, values, count);
+            RESULT result = orig(inst, indicesPtr, valuesPtr, count);
             if (result != RESULT.OK)
             {
                 Logger.Error(nameof(AudioSplitterModule), $"Set parameter by indices error {Enum.GetName(typeof(RESULT), result)}");
@@ -498,10 +506,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT HookedSetParameterValueByIndex(SetParameterValueByIndex orig, IntPtr inst, int index, float value);
 
+                // Have to change arrays to IntPtr because the delegate gets only the first value
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT SetParameterValuesByIndices(IntPtr inst, int[] indices, float[] values, int count);
+                public delegate RESULT SetParameterValuesByIndices(IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count);
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-                public delegate RESULT HookedSetParameterValuesByIndices(SetParameterValuesByIndices orig, IntPtr inst, int[] indices, float[] values, int count);
+                public delegate RESULT HookedSetParameterValuesByIndices(SetParameterValuesByIndices orig, IntPtr inst, IntPtr indicesPtr, IntPtr valuesPtr, int count);
 
                 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
                 public delegate RESULT SetPaused(IntPtr inst, bool paused);
