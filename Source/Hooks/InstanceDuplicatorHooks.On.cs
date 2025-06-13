@@ -74,6 +74,12 @@ namespace Celeste.Mod.AudioSplitter.Audio
             bool needToSetCallbacks = !CelesteAudio.Banks.ModCache.TryGetValue(asset, out _);
 
             Bank bank = orig(asset);
+            if (bank == null)
+            {
+                Logger.Warn(nameof(AudioSplitterModule), $"Failed to set callbacks to modded bank {asset.PathVirtual}, IngestBank returned null");
+                return bank;
+            }
+
             if (needToSetCallbacks)
                 CallbackWrapper.SetCallbacksToBank(bank);
 
@@ -85,6 +91,12 @@ namespace Celeste.Mod.AudioSplitter.Audio
             bool needToSetCallbacks = !CelesteAudio.Banks.Banks.TryGetValue(name, out _);
 
             Bank bank = orig(name, loadStrings);
+            if (bank == null)
+            {
+                Logger.Warn(nameof(AudioSplitterModule), $"Failed to set callbacks to vanilla bank {name}, Load returned null");
+                return bank;
+            }
+
             if (needToSetCallbacks)
                 CallbackWrapper.SetCallbacksToBank(bank);
 
