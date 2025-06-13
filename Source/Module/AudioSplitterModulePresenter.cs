@@ -17,15 +17,19 @@ namespace Celeste.Mod.AudioSplitter.Module
         public void Attach(AudioSplitterModuleView view)
         {
             this.view = view;
+
             InitializeElements();
             AddEventsToElements();
 
             Module.DeviceManager.OnListUpdate += OnDeviceListUpdate;
+            Module.LoadingAudioDuplication.Observe(OnLoadingAudioDuplicatorUpdate);
         }
 
         public void Detach()
         {
             Module.DeviceManager.OnListUpdate -= OnDeviceListUpdate;
+            Module.LoadingAudioDuplication.StopObserving(OnLoadingAudioDuplicatorUpdate);
+            
             view = null;
         }
 
@@ -66,29 +70,7 @@ namespace Celeste.Mod.AudioSplitter.Module
 
             view.ToggleDuplicatorButton.Pressed(() =>
             {
-                // FIXME: Feels like this should be an external API for presenter to call,
-                // gonna let it be here for now
-                LoadingMessage loading = new LoadingMessage(Celeste.Instance, default, new(20f, LoadingMessage.UI_HEIGHT - 20f));
-
-                var dialog = !Module.Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
-                loading.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
-
-                RunThread.Start(new Action(() =>
-                {
-                    if (view != null)
-                        view.ToggleDuplicatorButton.Disabled = true;
-                    loading.Add();
-
-                    Module.ToggleAudioDuplicator();
-
-                    if (view != null)
-                    {
-                        ToggleDropdownVisibility();
-                        UpdateToggleDuplicatorLabel();
-                        view.ToggleDuplicatorButton.Disabled = false;
-                    }
-                    loading.Remove();
-                }), "CJ_AUDIOSPLITTER_ToggleAudioDuplicator");
+                Module.ToggleAudioDuplicatorInThread();
             });
 
             view.ReloadDevicesButton.Pressed(() => { Module.DeviceManager.ReloadDeviceList(); });
@@ -133,6 +115,23 @@ namespace Celeste.Mod.AudioSplitter.Module
             UpdateDropdownDevices(view.AudioDeviceDropdown, devices);
             UpdateDropdownDevices(view.SFXDeviceDropdown, devices);
             UpdateDropdownDevices(view.MusicDeviceDropdown, devices);
+        }
+
+        private void OnLoadingAudioDuplicatorUpdate(bool loading)
+        {
+            if (view != null)
+            {
+                if (loading)
+                {
+                    view.ToggleDuplicatorButton.Disabled = true;
+                }
+                else
+                {
+                    ToggleDropdownVisibility();
+                    UpdateToggleDuplicatorLabel();
+                    view.ToggleDuplicatorButton.Disabled = false;
+                }
+            }
         }
     }
 }

@@ -16,6 +16,8 @@ namespace Celeste.Mod.AudioSplitter.UI
         private float imageFrame;
         private List<MTexture> loadingImages;
 
+        private bool added = false;
+
         public LoadingMessage(Game game, string label, Vector2 position) : base(game)
         {
             Label = label;
@@ -29,12 +31,20 @@ namespace Celeste.Mod.AudioSplitter.UI
 
         public void Add()
         {
-            Celeste.Instance.Components.Add(this);
+            if (!added)
+            {
+                Celeste.Instance.Components.Add(this);
+                added = true;
+            }
         }
 
         public void Remove()
         {
-            Celeste.Instance.Components.Remove(this);
+            if (added)
+            {
+                Celeste.Instance.Components.Remove(this);
+                added = false;
+            }
         }
 
         protected override void Dispose(bool disposing)

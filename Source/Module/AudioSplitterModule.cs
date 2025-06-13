@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.Extensions;
+using Celeste.Mod.AudioSplitter.UI;
 using Celeste.Mod.AudioSplitter.Utility;
 using FMOD.Studio;
 using CelesteAudio = global::Celeste.Audio;
@@ -24,6 +26,7 @@ namespace Celeste.Mod.AudioSplitter.Module
         public bool Enabled => Duplicator.Initialized;
 
         private AudioSplitterModulePresenter presenter = new();
+        private LoadingMessage loadingMessage = null;
 
         public AudioSplitterModule()
         {
@@ -50,6 +53,7 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public override void Unload()
         {
+            
             HookAttribute.Invoke(typeof(RemoveOnUnloadAttribute));
 
             DeviceManager.Terminate();
@@ -60,6 +64,28 @@ namespace Celeste.Mod.AudioSplitter.Module
         {
             DeviceManager.Initialize();
             DeviceManager.OnListUpdate += (_) => { ConfigureSystemDevices(); };
+        }
+
+        public override void LoadContent(bool firstLoad)
+        {
+            if (firstLoad)
+            {
+                loadingMessage = new(Celeste.Instance, default, new(20f, LoadingMessage.UI_HEIGHT - 20f));
+            }
+        }
+
+        private void ShowLoadingMessageOnLoading(bool loading)
+        {
+            if (loading)
+            {
+                var dialog = !Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
+                loadingMessage.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
+                loadingMessage.Add();
+            }
+            else
+            {
+                loadingMessage.Remove();
+            }
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot)
@@ -73,19 +99,31 @@ namespace Celeste.Mod.AudioSplitter.Module
             menu.OnClose += () => { presenter.Detach(); };
         }
 
-        private bool LoadingInProgress = false;
+        public LiveData<bool> LoadingAudioDuplication = new(false);
+
         public void ToggleAudioDuplicator()
         {
-            LoadingInProgress = true;
+            LoadingAudioDuplication.Value = true;
             if (!Duplicator.Initialized)
                 Duplicator.Initialize();
             else
                 Duplicator.Terminate();
-            LoadingInProgress = false;
+            LoadingAudioDuplication.Value = false;
 
             ConfigureSystemDevices();
             global::Celeste.Settings.Instance.ApplyVolumes();
         }
+
+        public void ToggleAudioDuplicatorInThread()
+        {
+            Thread thread = new(
+                () => {
+                    ToggleAudioDuplicator();
+                }
+            );
+            thread.Start();
+        }
+        
 
         public void ConfigureSystemDevices()
         {
@@ -110,6 +148,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                 On.Celeste.Audio.VCAVolume += OnAudioVCAVolume;
 
                 On.Celeste.OuiMainMenu.Update += DisableExitWhileLoading;
+
+                On.Celeste.Overworld.ctor += Overworld_ctor;
             }
 
             [RemoveOnUnload]
@@ -120,13 +160,16 @@ namespace Celeste.Mod.AudioSplitter.Module
                 On.Celeste.Audio.VCAVolume -= OnAudioVCAVolume;
 
                 On.Celeste.OuiMainMenu.Update -= DisableExitWhileLoading;
+                
+                On.Celeste.Overworld.ctor -= Overworld_ctor;
             }
 
             public static void OnAudioInit(On.Celeste.Audio.orig_Init orig)
             {
                 orig();
+
                 if (Settings.EnableOnStartup)
-                    Instance.ToggleAudioDuplicator();
+                    Instance.ToggleAudioDuplicatorInThread();
             }
 
             public static void OnAudioUnload(On.Celeste.Audio.orig_Unload orig)
@@ -168,7 +211,7 @@ namespace Celeste.Mod.AudioSplitter.Module
                 );
                 if (exitButton != default(MenuButton))
                 {
-                    if (Instance.LoadingInProgress)
+                    if (Instance.LoadingAudioDuplication.Value)
                     {
                         if (!exitButton.IsDisabled())
                             exitButton.Disable();
@@ -180,6 +223,12 @@ namespace Celeste.Mod.AudioSplitter.Module
                 }
 
                 orig(self);
+            }
+
+            public static void Overworld_ctor(On.Celeste.Overworld.orig_ctor orig, Overworld self, OverworldLoader loader)
+            {
+                Instance.LoadingAudioDuplication.Observe(Instance.ShowLoadingMessageOnLoading);
+                orig(self, loader);
             }
         }
     }
