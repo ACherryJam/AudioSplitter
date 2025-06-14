@@ -117,7 +117,11 @@ namespace Celeste.Mod.AudioSplitter.UI
 
         private string GetOptionLabel()
         {
-            string label = CurrentOption.Label;
+            string label;
+            if (CurrentOption == null)
+                label = Dialog.Clean("AUDIOSPLITTER_DROPDOWN_MENU_NO_SELECTION");
+            else
+                label = CurrentOption.Label;
 
             float width = MultiLanguageFont.Measure(label).X;
             float maxWidth = Container.Width - LeftWidth() - 96f;
