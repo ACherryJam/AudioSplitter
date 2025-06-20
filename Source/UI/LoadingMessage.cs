@@ -5,11 +5,8 @@ using Monocle;
 
 namespace Celeste.Mod.AudioSplitter.UI
 {
-    public class LoadingMessage : DrawableGameComponent
+    public class LoadingMessage : DrawableCelesteElement
     {
-        public static readonly int UI_WIDTH = 1920;
-        public static readonly int UI_HEIGHT = 1080;
-
         public string Label;
         public Vector2 Position;
 
@@ -18,7 +15,7 @@ namespace Celeste.Mod.AudioSplitter.UI
 
         private bool added = false;
 
-        public LoadingMessage(Game game, string label, Vector2 position) : base(game)
+        public LoadingMessage(string label, Vector2 position) : base()
         {
             Label = label;
             Position = position;

@@ -72,7 +72,7 @@ namespace Celeste.Mod.AudioSplitter.Module
         {
             if (firstLoad)
             {
-                loadingMessage = new(Celeste.Instance, default, new(20f, LoadingMessage.UI_HEIGHT - 20f));
+                loadingMessage = new("", new(20f, LoadingMessage.UI_HEIGHT - 20f));
             }
         }
 
