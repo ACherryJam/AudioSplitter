@@ -8,7 +8,7 @@ namespace Celeste.Mod.AudioSplitter.Extensions
 {
     public static class TextMenuItemExtensions
     {
-        public static TextMenuExt.EaseInSubHeaderExt GetDescriptionText(this TextMenu.Item option)
+        public static TextMenuExt.EaseInSubHeaderExt? GetDescriptionText(this TextMenu.Item option)
         {
             var menu = option.Container;
             var description = menu.Items[menu.IndexOf(option) + 1];

@@ -9,7 +9,7 @@ namespace Celeste.Mod.AudioSplitter.Hooks
 {
     public static class MenuButtonDisablingHooks
     {
-        static Hook get_SelectionColor = null;
+        static Hook? get_SelectionColor;
 
         [ApplyOnLoad]
         public static void Apply()
@@ -17,7 +17,7 @@ namespace Celeste.Mod.AudioSplitter.Hooks
             On.Celeste.MenuButton.Confirm += OnMenuButtonConfirm;
 
             get_SelectionColor = new Hook(
-                typeof(MenuButton).GetMethod("get_SelectionColor", BindingFlags.Public | BindingFlags.Instance),
+                typeof(MenuButton).GetMethod("get_SelectionColor", BindingFlags.Public | BindingFlags.Instance)!,
                 getSelectionColor,
                 true
             );
@@ -28,7 +28,7 @@ namespace Celeste.Mod.AudioSplitter.Hooks
         {
             On.Celeste.MenuButton.Confirm -= OnMenuButtonConfirm;
             
-            get_SelectionColor.Dispose();
+            get_SelectionColor?.Dispose();
             get_SelectionColor = null;
         }
 

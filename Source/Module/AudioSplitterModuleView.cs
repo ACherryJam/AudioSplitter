@@ -11,15 +11,13 @@ namespace Celeste.Mod.AudioSplitter.Module
         public ConfirmButton ToggleDuplicatorButton;
         public TextMenu.OnOff EnableOnStartupOnOff;
 
-        public AudioSplitterModuleView() => CreateElements();
-
-        public void CreateElements()
+        public AudioSplitterModuleView()
         {
             AudioDeviceDropdown = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_AUDIO_DEVICE"));
             SFXDeviceDropdown = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_SFX_DEVICE"));
             MusicDeviceDropdown = new DropdownMenu<OutputDeviceInfo>(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_MUSIC_DEVICE"));
 
-            ToggleDuplicatorButton = new ConfirmButton(default(string));
+            ToggleDuplicatorButton = new ConfirmButton(string.Empty);
             ReloadDevicesButton = new TextMenu.Button(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_RELOAD_DEVICE_LIST"));
 
             EnableOnStartupOnOff = new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_ENABLE_ON_STARTUP"), default(bool));

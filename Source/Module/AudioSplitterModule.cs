@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Celeste.Mod.AudioSplitter.Audio;
 using Celeste.Mod.AudioSplitter.Extensions;
@@ -12,7 +13,9 @@ namespace Celeste.Mod.AudioSplitter.Module
 {
     public class AudioSplitterModule : EverestModule
     {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public static AudioSplitterModule Instance { get; private set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
         public override Type SettingsType => typeof(AudioSplitterModuleSettings);
         public static AudioSplitterModuleSettings Settings => (AudioSplitterModuleSettings)Instance._Settings;
@@ -25,8 +28,7 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public bool Enabled => Duplicator.Initialized;
 
-        private AudioSplitterModulePresenter presenter = new();
-        private LoadingMessage loadingMessage = null;
+        private LoadingMessage? loadingMessage;
 
         public AudioSplitterModule()
         {
@@ -55,7 +57,6 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         public override void Unload()
         {
-            
             HookAttribute.Invoke(typeof(RemoveOnUnloadAttribute));
 
             DeviceManager.Terminate();
@@ -81,7 +82,7 @@ namespace Celeste.Mod.AudioSplitter.Module
             CreateModMenuSectionHeader(menu, inGame, snapshot);
 
             var view = new AudioSplitterModuleView();
-            presenter.Attach(view);
+            var presenter = new AudioSplitterModulePresenter(view);
             view.AddTo(menu, inGame);
 
             menu.OnClose += () => { presenter.Detach(); };
@@ -121,18 +122,24 @@ namespace Celeste.Mod.AudioSplitter.Module
             else
             {
                 DeviceManager.SetDevice(Settings.SFXOutputDevice, CelesteAudio.System);
-                DeviceManager.SetDevice(Settings.MusicOutputDevice, Duplicator.System);
+                DeviceManager.SetDevice(Settings.MusicOutputDevice, Duplicator.System!);
             }
         }
 
         private void UpdateLoadingMessageText()
         {
+            if (loadingMessage == null)
+                return;
+
             var dialog = !Enabled ? "LOADING_MESSAGE" : "UNLOADING_MESSAGE";
             loadingMessage.Label = Dialog.Clean($"AUDIOSPLITTER_{dialog}");
         }
 
         private void ShowLoadingMessageOnLoading(bool loading)
         {
+            if (loadingMessage == null)
+                return;
+
             if (loading)
             {
                 UpdateLoadingMessageText();
@@ -243,6 +250,14 @@ namespace Celeste.Mod.AudioSplitter.Module
                 Instance.LoadingAudioDuplication.Observe(Instance.ShowLoadingMessageOnLoading);
                 orig(self, loader);
             }
+        }
+    }
+
+    internal static class SystemExtensions
+    {
+        public static void SetDevice(this FMOD.Studio.System system, OutputDeviceInfo device)
+        {
+            AudioSplitterModule.Instance.DeviceManager.SetDevice(device, system);
         }
     }
 }

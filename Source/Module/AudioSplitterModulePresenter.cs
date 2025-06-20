@@ -10,15 +10,16 @@ namespace Celeste.Mod.AudioSplitter.Module
         internal static AudioSplitterModule Module => AudioSplitterModule.Instance;
         internal static AudioSplitterModuleSettings Settings => AudioSplitterModule.Settings;
 
-        private AudioSplitterModuleView view = null;
-        
-        public AudioSplitterModulePresenter() { }
+        private AudioSplitterModuleView view;
 
-        public void Attach(AudioSplitterModuleView view)
-        {
+        public AudioSplitterModulePresenter(AudioSplitterModuleView view) {
             this.view = view;
+            Attach();
+        }
 
-            InitializeElements();
+        public void Attach()
+        {
+            InitializeElementValues();
             AddEventsToElements();
 
             Module.DeviceManager.OnListUpdate += OnDeviceListUpdate;
@@ -29,19 +30,17 @@ namespace Celeste.Mod.AudioSplitter.Module
         {
             Module.DeviceManager.OnListUpdate -= OnDeviceListUpdate;
             Module.LoadingAudioDuplication.StopObserving(OnLoadingAudioDuplicatorUpdate);
-            
-            view = null;
         }
 
-        private void InitializeElements()
+        private void InitializeElementValues()
         {
             UpdateToggleDuplicatorLabel();
             ToggleDropdownVisibility();
 
             // Important: Set option first, update devices after!
-            view.AudioDeviceDropdown.CurrentOption = new(Settings.AudioOutputDevice.Name, Settings.AudioOutputDevice);
-            view.SFXDeviceDropdown.CurrentOption = new(Settings.SFXOutputDevice.Name, Settings.SFXOutputDevice);
-            view.MusicDeviceDropdown.CurrentOption = new(Settings.MusicOutputDevice.Name, Settings.MusicOutputDevice);
+            view.AudioDeviceDropdown.CurrentOption = Settings.AudioOutputDevice.ToOption();
+            view.SFXDeviceDropdown.CurrentOption = Settings.SFXOutputDevice.ToOption();
+            view.MusicDeviceDropdown.CurrentOption = Settings.MusicOutputDevice.ToOption();
 
             UpdateDropdownDevices(view.AudioDeviceDropdown, Module.DeviceManager.Devices);
             UpdateDropdownDevices(view.SFXDeviceDropdown, Module.DeviceManager.Devices);
@@ -54,18 +53,24 @@ namespace Celeste.Mod.AudioSplitter.Module
         {
             view.AudioDeviceDropdown.Change((device) =>
             {
-                Settings.AudioOutputDevice = device;
-                Module.DeviceManager.SetDevice(Settings.AudioOutputDevice, global::Celeste.Audio.System);
+                if (device == null)
+                    return;
+                Settings.AudioOutputDevice = (OutputDeviceInfo)device;
+                global::Celeste.Audio.System?.SetDevice(Settings.AudioOutputDevice);
             });
             view.MusicDeviceDropdown.Change((device) =>
             {
-                Settings.MusicOutputDevice = device;
-                Module.DeviceManager.SetDevice(Settings.MusicOutputDevice, Module.Duplicator.System);
+                if (device == null)
+                    return;
+                Settings.MusicOutputDevice = (OutputDeviceInfo)device;
+                Module.Duplicator.System?.SetDevice(Settings.MusicOutputDevice);
             });
             view.SFXDeviceDropdown.Change((device) =>
             {
-                Settings.SFXOutputDevice = device;
-                Module.DeviceManager.SetDevice(Settings.SFXOutputDevice, global::Celeste.Audio.System);
+                if (device == null)
+                    return;
+                Settings.SFXOutputDevice = (OutputDeviceInfo)device;
+                global::Celeste.Audio.System?.SetDevice(Settings.SFXOutputDevice);
             });
 
             view.ToggleDuplicatorButton.Pressed(() =>
@@ -99,10 +104,12 @@ namespace Celeste.Mod.AudioSplitter.Module
                 dropdownMenu.Add(info.Name, info);
 
             // Update option index
-            OutputDeviceInfo device = dropdownMenu.CurrentOption.Value;
-            var index = devices.IndexOf(device);
+            OutputDeviceInfo? device = dropdownMenu.CurrentOption?.Value;
+            if (device == null)
+                return;
+            var index = devices.IndexOf((OutputDeviceInfo)device);
             if (index != -1)
-                dropdownMenu.OptionIndex = GetDeviceIndex(device);
+                dropdownMenu.OptionIndex = GetDeviceIndex((OutputDeviceInfo)device);
         }
 
         private int GetDeviceIndex(OutputDeviceInfo deviceInfo)
@@ -132,6 +139,18 @@ namespace Celeste.Mod.AudioSplitter.Module
                     view.ToggleDuplicatorButton.Disabled = false;
                 }
             }
+        }
+    }
+
+    internal static class OutputDeviceInfoExtensions
+    {
+        public static DropdownMenu<OutputDeviceInfo>.Option ToOption(this OutputDeviceInfo info)
+        {
+            var name = info.Name;
+            if (info == OutputDeviceInfo.DefaultDevice)
+                name = Dialog.Clean("MODOPTIONS_AUDIOSPLITTER_DEFAULT_DEVICE");
+
+            return new(name, info);
         }
     }
 }

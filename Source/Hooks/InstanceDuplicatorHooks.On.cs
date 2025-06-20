@@ -56,7 +56,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
             }
 
-            if (!locker.TryEnter(nameof(OnInstanceCreate), out IDisposable scope))
+            if (!locker.TryEnter(nameof(OnInstanceCreate), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -69,7 +69,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return RESULT.OK;
         }
 
-        private static Bank SetCallbacksToLoadedModdedBank(On.Celeste.Audio.orig_IngestBank orig, ModAsset asset)
+        private static Bank? SetCallbacksToLoadedModdedBank(On.Celeste.Audio.orig_IngestBank orig, ModAsset asset)
         {
             bool needToSetCallbacks = !CelesteAudio.Banks.ModCache.TryGetValue(asset, out _);
 
@@ -86,7 +86,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return bank;
         }
 
-        private static Bank SetCallbacksToLoadedVanillaBank(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
+        private static Bank? SetCallbacksToLoadedVanillaBank(On.Celeste.Audio.Banks.orig_Load orig, string name, bool loadStrings)
         {
             bool needToSetCallbacks = !CelesteAudio.Banks.Banks.TryGetValue(name, out _);
 

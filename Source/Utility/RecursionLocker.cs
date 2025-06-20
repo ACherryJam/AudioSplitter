@@ -34,11 +34,11 @@ namespace Celeste.Mod.AudioSplitter.Utility
 
         public RecursionLocker() { }
 
-        public bool TryEnter(object obj, out IDisposable scope)
+        public bool TryEnter(object obj, out IDisposable? scope)
         {
             scope = null;
 
-            Lock @lock = null;
+            Lock? @lock;
             if (!locks.TryGetValue(obj, out @lock))
             {
                 @lock = locks[obj] = new Lock();

@@ -12,10 +12,10 @@ namespace Celeste.Mod.AudioSplitter.UI
         public string Label;
         public bool Focused = false;
         public bool PerformAction = false;
-        public new Action OnPressed;
+        public new event Action OnPressed = () => { };
 
         protected float ease;
-        protected Wiggler wiggler;
+        protected Wiggler? wiggler;
 
         private static readonly float optionGap = 40f;
         private static readonly float verticalGap = 4f;
@@ -54,7 +54,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             if (Focused && PerformAction)
             {
                 PerformAction = false;
-                wiggler.StopAndClear();
+                wiggler!.StopAndClear();
                 wiggler.Start();
                 global::Celeste.Audio.Play("event:/ui/main/button_toggle_off");
             }
@@ -66,7 +66,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             if (Focused && !PerformAction)
             {
                 PerformAction = true;
-                wiggler.StopAndClear();
+                wiggler!.StopAndClear();
                 wiggler.Start();
                 global::Celeste.Audio.Play("event:/ui/main/button_toggle_on");
             }
@@ -83,7 +83,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 }
                 Container.Focused = false;
                 Focused = true;
-                wiggler.StopAndClear();
+                wiggler!.StopAndClear();
             }
             else
             {
@@ -166,7 +166,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 position.X -= ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_YES")).X;
                 ActiveFont.DrawOutline(
                     Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_YES"),
-                    position + Vector2.UnitY * (PerformAction ? wiggler.Value : 0f) * 8f,
+                    position + Vector2.UnitY * (PerformAction ? wiggler!.Value : 0f) * 8f,
                     new Vector2(0f, 0.5f), Vector2.One,
                     (PerformAction ? Container.HighlightColor : Color.White) * alpha,
                     2f, strokeColor
@@ -176,7 +176,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 position.X -= ActiveFont.Measure(Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_NO")).X;
                 ActiveFont.DrawOutline(
                     Dialog.Clean("AUDIOSPLITTER_CONFIRMBUTTON_NO"),
-                    position + Vector2.UnitY * (!PerformAction ? wiggler.Value : 0f) * 8f,
+                    position + Vector2.UnitY * (!PerformAction ? wiggler!.Value : 0f) * 8f,
                     new Vector2(0f, 0.5f), Vector2.One,
                     (!PerformAction ? Color.OrangeRed : Color.White) * alpha,
                     2f, strokeColor

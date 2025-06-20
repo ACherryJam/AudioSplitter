@@ -29,17 +29,17 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public static List<AudioDuplicator> ReadyInstances => Instances.Where(x => x.Ready).ToList();
         public static List<AudioDuplicator> InitializedInstances => Instances.Where(x => x.Initialized).ToList();
 
-        private FMOD.Studio.System system = null;
+        private FMOD.Studio.System? system;
 
-        private BankCache bankCache = null;
-        private EventCache eventCache = null;
-        private InstanceDuplicator instanceDuplicator = null;
+        private BankCache? bankCache;
+        private EventCache? eventCache;
+        private InstanceDuplicator? instanceDuplicator;
 
         private RecursionLocker locker = new();
 
         public bool Ready { get; private set; } = false;
         public bool Initialized { get; private set; } = false;
-        public FMOD.Studio.System System => system;
+        public FMOD.Studio.System? System => system;
 
         public AudioDuplicator() => Instances.Add(this);
         ~AudioDuplicator() => Instances.Remove(this);
@@ -86,13 +86,13 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             Ready = false;
 
-            bankCache.UnloadBanks();
-            eventCache.Clear();
+            bankCache?.UnloadBanks();
+            eventCache?.Clear();
 
-            instanceDuplicator.Terminate();
-            instanceDuplicator.Clear();
+            instanceDuplicator?.Terminate();
+            instanceDuplicator?.Clear();
 
-            system.release();
+            system?.release();
             system = null;
 
             Initialized = false;
@@ -109,7 +109,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public float VCAVolume(string path, float? newVolume = null)
         {
             float volume = 1f;
-            if (system.getVCA(path, out VCA vca) == RESULT.OK)
+            if (system!.getVCA(path, out VCA vca) == RESULT.OK)
             {
                 if (newVolume != null)
                     vca.setVolume(newVolume.Value);
@@ -154,7 +154,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 forward = new VECTOR { x = forward.X, y = forward.Y, z = forward.Z },
                 up = new VECTOR { x = up.X, y = up.Y, z = up.Z },
             };
-            system.setListenerAttributes(0, attributes);
+            system!.setListenerAttributes(0, attributes);
         }
 
         internal static class AudioDuplicatorHooks
@@ -197,7 +197,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             public static EventDescription OnAudioGetEventDescription(On.Celeste.Audio.orig_GetEventDescription orig, string path)
             {
                 foreach (var instance in ReadyInstances)
-                    instance.eventCache.LoadEventDescription(path);
+                    instance.eventCache!.LoadEventDescription(path);
                 return orig(path);
             }
 
@@ -206,7 +206,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 if (CoreModule.Settings.UnloadUnusedAudio)
                 {
                     foreach (var instance in ReadyInstances)
-                        instance.eventCache.ReleaseUnusedDescriptions();
+                        instance.eventCache!.ReleaseUnusedDescriptions();
                 }
                 orig();
             }

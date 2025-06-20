@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,7 +18,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         /// <summary>
         /// System to set DEVICE_LIST_CHANGED callbacks to, won't play any audio
         /// </summary>
-        FMOD.System system;
+        FMOD.System? system;
 
         private Dictionary<Guid, OutputDeviceInfo> devices = new();
 
@@ -33,10 +34,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public bool Initialized { get; private set; } = false;
 
-        public Action<List<OutputDeviceInfo>> OnListUpdate;
+        public event Action<List<OutputDeviceInfo>> OnListUpdate = _ => { };
 
         // ref to not get freed by GC (GC is such a pain)
-        private SYSTEM_CALLBACK callback;
+        private SYSTEM_CALLBACK? callback;
 
         public OutputDeviceManager() => Instances.Add(this);
         ~OutputDeviceManager() => Instances.Remove(this);
@@ -88,7 +89,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (!Initialized)
                 return;
 
-            system.release();
+            system?.release();
             system = null;
 
             Initialized = false;
@@ -113,13 +114,16 @@ namespace Celeste.Mod.AudioSplitter.Audio
             }
             catch (Exception e)
             {
-                Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}, stacktrace:\n{e.StackTrace.ToString()}");
+                Logger.Error(nameof(AudioSplitterModule), $"Failed to fetch the output device list, e: {e.Message}, stacktrace:\n{e.StackTrace}");
                 return RESULT.OK;
             }
         }
 
         public void ReloadDeviceList()
         {
+            if (system == null)
+                return;
+
             system.getOutput(out OUTPUTTYPE outputtype);
             system.setOutput(OUTPUTTYPE.NOSOUND);
             system.setOutput(outputtype);
@@ -129,6 +133,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public List<OutputDeviceInfo> FetchDevices()
         {
+            if (system == null)
+                return new();
+
             Dictionary<Guid, OutputDeviceInfo> newDevices = new();
 
             RESULT result;

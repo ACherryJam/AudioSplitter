@@ -7,12 +7,12 @@ namespace Celeste.Mod.AudioSplitter.UI
 {
     public static class MultiLanguageFont
     {
-        private static FieldInfo loadedFonts = typeof(Fonts).GetField("loadedFonts", BindingFlags.NonPublic | BindingFlags.Static);
+        private static FieldInfo loadedFonts = typeof(Fonts).GetField("loadedFonts", BindingFlags.NonPublic | BindingFlags.Static)!;
         private static Dictionary<string, PixelFont> LoadedFonts
         {
             get
             {
-                return (Dictionary<string, PixelFont>)loadedFonts.GetValue(null);
+                return (Dictionary<string, PixelFont>)loadedFonts.GetValue(null)!;
             }
         }
 
@@ -43,8 +43,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                 }
                 else
                 {
-                    PixelFontCharacter c = null;
-
+                    PixelFontCharacter? c;
                     if (!font_size.Characters.TryGetValue(text[i], out c))
                     {
                         foreach (PixelFont replacement_font in LoadedFonts.Values)
@@ -104,7 +103,7 @@ namespace Celeste.Mod.AudioSplitter.UI
                     continue;
                 }
 
-                PixelFontCharacter c = null;
+                PixelFontCharacter? c;
                 if (!font.Characters.TryGetValue(text[i], out c))
                 {
                     foreach (PixelFont replacement_font in LoadedFonts.Values)

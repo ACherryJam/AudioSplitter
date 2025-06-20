@@ -16,8 +16,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
     {
         private FMOD.Studio.System system;
 
-        private ModdedBankLoader moddedLoader = null;
-        private VanillaBankLoader vanillaLoader = null;
+        private ModdedBankLoader moddedLoader;
+        private VanillaBankLoader vanillaLoader;
 
         public BankLoader(FMOD.Studio.System system)
         {
@@ -27,11 +27,11 @@ namespace Celeste.Mod.AudioSplitter.Audio
             vanillaLoader = new(this.system);
         }
 
-        public Bank LoadBank(string name, bool loadStrings)
+        public Bank? LoadBank(string name, bool loadStrings)
         {
             Logger.Verbose(nameof(AudioSplitterModule), $"Trying to load bank {name}");
 
-            Bank bank;
+            Bank? bank;
             ModAsset asset;
             if (Everest.Content.TryGet<AssetTypeBank>(name, out asset))
                 bank = moddedLoader.LoadBank(asset);
@@ -83,17 +83,17 @@ namespace Celeste.Mod.AudioSplitter.Audio
         private HashSet<string> loadedModBankPaths = new();
         private Dictionary<ModAsset, Bank> modBankCache = new();
         private Dictionary<IntPtr, ModAsset> modBankAssets = new();
-        private Dictionary<IntPtr, Stream> modBankStreams = new();
+        private Dictionary<IntPtr, Stream?> modBankStreams = new();
 
         private FMOD.Studio.System system;
 
         public ModdedBankLoader(FMOD.Studio.System system) { this.system = system; }
 
-        public Bank LoadBank(ModAsset asset)
+        public Bank? LoadBank(ModAsset asset)
         {
             loadedModBankPaths.Add(asset.PathVirtual);
 
-            Bank bank;
+            Bank? bank;
             if (modBankCache.TryGetValue(asset, out bank))
                 return bank;
 
@@ -129,7 +129,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return modBankCache[asset] = bank;
         }
 
-        public Bank LoadStringBank(ModAsset asset) => LoadBank(asset);
+        public Bank? LoadStringBank(ModAsset asset) => LoadBank(asset);
 
         private RESULT ModBankOpen(StringWrapper name, ref uint filesize, ref IntPtr handle, IntPtr userdata)
         {
@@ -141,7 +141,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private RESULT ModBankClose(IntPtr handle, IntPtr userdata)
         {
-            modBankStreams[handle].Dispose();
+            modBankStreams[handle]?.Dispose();
             modBankStreams[handle] = null;
             return RESULT.OK;
         }
@@ -150,7 +150,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             bytesread = 0;
 
-            Stream stream = modBankStreams[handle];
+            Stream stream = modBankStreams[handle]!;
             byte[] tmp = new byte[Math.Min(65536, sizebytes)];
             int read;
             while ((read = stream.Read(tmp, 0, Math.Min(tmp.Length, (int)(sizebytes - bytesread)))) > 0)
@@ -166,7 +166,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         private RESULT ModBankSeek(IntPtr handle, uint pos, IntPtr userdata)
         {
-            modBankStreams[handle].Seek(pos, SeekOrigin.Begin);
+            modBankStreams[handle]!.Seek(pos, SeekOrigin.Begin);
             return RESULT.OK;
         }
     }

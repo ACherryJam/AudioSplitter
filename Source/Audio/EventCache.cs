@@ -23,7 +23,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             if (path is null)
                 return;
 
-            EventDescription eventDescription = null;
+            EventDescription? eventDescription;
             if (path == null || cachedEventDescriptions.TryGetValue(path, out eventDescription))
                 return;
 

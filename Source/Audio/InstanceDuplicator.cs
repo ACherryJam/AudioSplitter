@@ -44,9 +44,10 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
         public void Clear() => duplicateInstances.Clear();
 
-        public EventInstance GetDuplicate(EventInstance origInst)
+        public EventInstance? GetDuplicate(EventInstance origInst)
         {
-            return duplicateInstances.TryGetValue(origInst, out EventInstance inst) ? inst : null;
+            duplicateInstances.TryGetValue(origInst, out EventInstance? duplicate);
+            return duplicate;
         }
 
         public void DestroyDuplicate(EventInstance origInst)
@@ -60,8 +61,8 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             RESULT result;
 
-            result = CreateInstance(origDescGuid, out EventInstance duplicateInst);
-            if (result != RESULT.OK)
+            result = CreateInstance(origDescGuid, out EventInstance? duplicateInst);
+            if (duplicateInst == null || result != RESULT.OK)
             {
                 Logger.Error(nameof(AudioSplitterModule),
                     $"Failed to get create a duplicate instance {AudioExtensions.GetEventPath(origDescGuid)}, orig={origInst.getRaw()}, result: {result}");
@@ -77,7 +78,6 @@ namespace Celeste.Mod.AudioSplitter.Audio
             //    Console.WriteLine(t.ToString());
             //}
 #endif
-
             duplicateInstances[origInst] = duplicateInst;
             Logger.Verbose(nameof(AudioSplitterModule),
                 $"Created duplicate {AudioExtensions.GetEventPath(origDescGuid)}, orig={origInst.getRaw()}, duplicate={duplicateInst.getRaw()}");
@@ -142,7 +142,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             }
         }
 
-        private RESULT CreateInstance(Guid id, out EventInstance duplicate)
+        private RESULT CreateInstance(Guid id, out EventInstance? duplicate)
         {
             duplicate = null;
             RESULT result = system.getEventByID(id, out EventDescription duplicateDescription);
@@ -155,7 +155,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             return result;
         }
 
-        private RESULT CreateInstance(EventDescription celesteDescription, out EventInstance duplicate)
+        private RESULT CreateInstance(EventDescription celesteDescription, out EventInstance? duplicate)
         {
             duplicate = null;
             RESULT result = celesteDescription.getID(out Guid id);

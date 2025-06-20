@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Celeste.Mod.AudioSplitter.Audio;
+using Celeste.Mod.AudioSplitter.Module;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -10,12 +12,12 @@ namespace Celeste.Mod.AudioSplitter.UI
     /// Option behaviour inside SubMenu, basically
     /// </summary>
     /// <typeparam name="T">Type of stored data</typeparam>
-    public class DropdownMenu<T> : TextMenuExt.SubMenu
+    public class DropdownMenu<T> : TextMenuExt.SubMenu where T : struct
     {
         public class Option : IEquatable<Option>
         {
             public string Label;
-            public T Value;
+            public T? Value;
 
             public Option(string label, T value)
             {
@@ -23,7 +25,9 @@ namespace Celeste.Mod.AudioSplitter.UI
                 Value = value;
             }
 
-            public bool Equals(Option other) => Value.Equals(other.Value);
+            public override bool Equals(object? obj) => obj is Option option && Equals(option);
+            public bool Equals(Option? other) => other != null && Value != null && Value.Equals(other.Value);
+            public override int GetHashCode() => Value!.GetHashCode();
         }
 
         private int index = 0;
@@ -40,21 +44,43 @@ namespace Celeste.Mod.AudioSplitter.UI
             }
         }
         public List<Option> Options = new();
-        public Option CurrentOption = null;
 
-        public Action<T> OnOptionChange;
+        private Option? currentOption = null;
+        public Option? CurrentOption
+        {
+            get { return currentOption; }
+            set
+            {
+                if (value != null)
+                    value = SanitizeOption(value);
+                currentOption = value;
+            }
+        }
+
+        private Option SanitizeOption(Option option)
+        {
+            if (option.Label == null)
+            {
+                Logger.Warn(nameof(AudioSplitterModule), $"DropdownMenu option has null label, value={option.Value}");
+                option.Label = "";
+            }
+
+            return option;
+        }
+
+        public event Action<T?> OnOptionChange = _ => { };
 
         // Why aren't Icon and ease protected? :thinking:
-        private FieldInfo arrowIconInfo = null;
-        private FieldInfo easeInfo = null;
+        private FieldInfo? arrowIconInfo = null;
+        private FieldInfo? easeInfo = null;
 
         protected MTexture arrowIcon
         {
             get
             {
                 if (arrowIconInfo == null)
-                    arrowIconInfo = typeof(TextMenuExt.SubMenu).GetField("Icon", BindingFlags.Instance | BindingFlags.NonPublic);
-                return (MTexture)arrowIconInfo.GetValue(this);
+                    arrowIconInfo = typeof(TextMenuExt.SubMenu).GetField("Icon", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                return (MTexture)arrowIconInfo.GetValue(this)!;
             }
         }
 
@@ -63,8 +89,8 @@ namespace Celeste.Mod.AudioSplitter.UI
             get
             {
                 if (easeInfo == null)
-                    easeInfo = typeof(TextMenuExt.SubMenu).GetField("ease", BindingFlags.Instance | BindingFlags.NonPublic);
-                return (float)easeInfo.GetValue(this);
+                    easeInfo = typeof(TextMenuExt.SubMenu).GetField("ease", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                return (float)easeInfo.GetValue(this)!;
             }
         }
 
@@ -83,7 +109,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             item.Pressed(() =>
             {
                 OptionIndex = itemPosition;
-                OnOptionChange(CurrentOption.Value);
+                OnOptionChange(CurrentOption?.Value);
                 Exit();
             });
             base.Add(item);
@@ -100,7 +126,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             base.Added();
         }
 
-        public DropdownMenu<T> Change(Action<T> action)
+        public DropdownMenu<T> Change(Action<T?> action)
         {
             OnOptionChange = action;
             return this;
@@ -113,7 +139,7 @@ namespace Celeste.Mod.AudioSplitter.UI
         }
 
         public override float LeftWidth() => MultiLanguageFont.Measure(Label).X;
-        public override float RightWidth() => MultiLanguageFont.Measure(GetOptionLabel()).X + arrowIcon.Width;
+        public override float RightWidth() => Container is null ? 0 : MultiLanguageFont.Measure(GetOptionLabel()).X + arrowIcon.Width;
 
         private string GetOptionLabel()
         {
@@ -121,7 +147,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             if (CurrentOption == null)
                 label = Dialog.Clean("AUDIOSPLITTER_DROPDOWN_MENU_NO_SELECTION");
             else
-                label = CurrentOption.Label;
+                label = CurrentOption.Label ?? "";
 
             float width = MultiLanguageFont.Measure(label).X;
             float maxWidth = Container.Width - LeftWidth() - 96f;
@@ -153,7 +179,7 @@ namespace Celeste.Mod.AudioSplitter.UI
             ActiveFont.DrawOutline(Label, titlePosition, justify, Vector2.One, color, 2f, strokeColor);
 
             Vector2 optionPosition = titlePosition + new Vector2(Container.Width - RightWidth() - arrowIcon.Width - 10f, 0);
-            Color itemColor = Options.Contains(CurrentOption) ? color : Color.DarkSlateGray;
+            Color itemColor = CurrentOption != null && Options.Contains(CurrentOption) ? color : Color.DarkSlateGray;
             MultiLanguageFont.DrawOutline(GetOptionLabel(), optionPosition, justify, Vector2.One, itemColor, 2f, strokeColor);
 
             Vector2 iconJustify = uncentered ? new Vector2(MultiLanguageFont.Measure(GetOptionLabel()).X + arrowIcon.Width, 5f) : new Vector2(MultiLanguageFont.Measure(GetOptionLabel()).X / 2 + arrowIcon.Width, 5f);

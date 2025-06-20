@@ -33,7 +33,9 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 if (bankCache.ContainsKey(name))
                     continue;
 
-                bankCache[name] = bankLoader.LoadBank(name, banksNeedingStringLoading.Contains(name));
+                var bank = bankLoader.LoadBank(name, banksNeedingStringLoading.Contains(name));
+                if (bank != null)
+                    bankCache[name] = bank;
             }
         }
 

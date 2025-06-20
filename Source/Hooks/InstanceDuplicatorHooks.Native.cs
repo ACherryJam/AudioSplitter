@@ -71,7 +71,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Starting instance {inst}");
             RESULT result = orig(inst);
 
-            if (!locker.TryEnter(nameof(NativeInstanceStart), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceStart), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -94,7 +94,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             RESULT result = orig(inst, stop_mode);
 
-            if (!locker.TryEnter(nameof(NativeInstanceStop), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceStop), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -115,7 +115,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             RESULT result = orig(inst);
 
-            if (!locker.TryEnter(nameof(NativeInstanceRelease), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceRelease), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -136,7 +136,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             RESULT result = orig(inst);
 
-            if (!locker.TryEnter(nameof(NativeInstanceTriggerCue), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceTriggerCue), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -159,7 +159,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set 3d instance {inst}");
             RESULT result = orig(inst, ref attributes);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSet3DAttributes), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSet3DAttributes), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -183,7 +183,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
 
             RESULT result = orig(inst, callback, type);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetCallback), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetCallback), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -203,7 +203,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set listener mask instance {inst}");
             RESULT result = orig(inst, mask);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetListenerMask), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetListenerMask), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -223,7 +223,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             IntPtr inst, IntPtr name, float value
         )
         {
-            string nameValue = Marshal.PtrToStringUTF8(name);
+            string nameValue = Marshal.PtrToStringUTF8(name)!;
             Logger.Verbose(nameof(AudioSplitterModule), $"Setting parameter value for instance {inst}, {nameValue}={value}");
             
             RESULT result = orig(inst, name, value);
@@ -233,7 +233,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
             }
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValue), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValue), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -261,7 +261,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
             }
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValueByIndex), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValueByIndex), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -297,7 +297,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
                 return result;
             }
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValuesByIndices), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetParameterValuesByIndices), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -317,7 +317,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set paused instance {inst}");
             RESULT result = orig(inst, paused);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetPaused), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetPaused), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -337,7 +337,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set pitch instance {inst}");
             RESULT result = orig(inst, pitch);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetPitch), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetPitch), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -357,7 +357,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set property instance {inst}");
             RESULT result = orig(inst, index, value);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetProperty), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetProperty), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -377,7 +377,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set reverb level instance {inst}");
             RESULT result = orig(inst, index, level);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetReverbLevel), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetReverbLevel), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -397,7 +397,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set timeline instance {inst}");
             RESULT result = orig(inst, position);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetTimelinePosition), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetTimelinePosition), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -417,7 +417,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set userdata instance {inst}");
             RESULT result = orig(inst, data);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetUserData), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetUserData), out IDisposable? scope))
                 return result;
 
             using (scope)
@@ -437,7 +437,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
             Logger.Verbose(nameof(AudioSplitterModule), $"Set volume instance {inst}");
             RESULT result = orig(inst, volume);
 
-            if (!locker.TryEnter(nameof(NativeInstanceSetVolume), out IDisposable scope))
+            if (!locker.TryEnter(nameof(NativeInstanceSetVolume), out IDisposable? scope))
                 return result;
 
             using (scope)
