@@ -4,6 +4,12 @@ namespace Celeste.Mod.AudioSplitter.Module
 {
     public class AudioSplitterModuleSettings : EverestModuleSettings
     {
+        public enum Version : uint
+        {
+            Initial = 0,
+            NullDeviceNameFix = 1
+        }
+
         // ===== Audio Device Selection ===== //
         public OutputDeviceInfo AudioOutputDevice { get; set; } = OutputDeviceInfo.DefaultDevice;
 
@@ -12,5 +18,8 @@ namespace Celeste.Mod.AudioSplitter.Module
 
         // ===== Audio Splitting ===== //
         public bool EnableOnStartup { get; set; } = false;
+
+        // ===== Migration ===== //
+        public Version SettingsVersion { get; set; } = Version.Initial;
     }
 }

@@ -48,6 +48,8 @@ namespace Celeste.Mod.AudioSplitter.Module
                 continue;
 #endif
 
+            Instance._Settings = AudioSplitterModuleSettingsMigrations.Migrate(Settings);
+
             HookAttribute.Invoke(typeof(ApplyOnLoadAttribute));
         }
 

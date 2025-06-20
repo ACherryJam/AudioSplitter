@@ -12,7 +12,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         public string Name;
 
         public override int GetHashCode() => Id.GetHashCode();
-        public override bool Equals(object obj) => Equals((OutputDeviceInfo)obj);
+        public override bool Equals(object? obj) => obj is OutputDeviceInfo info && Equals(info);
         public bool Equals(OutputDeviceInfo info) => Id == info.Id;
 
         public static bool operator ==(OutputDeviceInfo left, OutputDeviceInfo right) => left.Equals(right);
@@ -49,7 +49,7 @@ namespace Celeste.Mod.AudioSplitter.Audio
         {
             Index = 0,
             Id = default,
-            Name = default
+            Name = "Default Device"
         };
     }
 }
