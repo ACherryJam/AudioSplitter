@@ -13,15 +13,14 @@ namespace Celeste.Mod.AudioSplitter.Utility
     {
         public static void Invoke(Type attribute)
         {
-            var methods = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetTypes())
+            var methods = typeof(HookAttribute).Assembly
+                .GetTypes()
                 .Where(t => t.IsClass)
-                .SelectMany(t => t.GetMethods());
+                .SelectMany(c => c.GetMethods())
+                .Where(m => m.GetCustomAttributes(attribute).Any());
 
             // Warn about instance methods that has an attribute
-            var instanceMethods = methods
-                .Where(m => !m.IsStatic)
-                .Where(m => m.GetCustomAttributes(attribute).Any());
+            var instanceMethods = methods.Where(m => !m.IsStatic);
             if (instanceMethods.Any())
             {
                 foreach (var method in instanceMethods)
@@ -31,9 +30,7 @@ namespace Celeste.Mod.AudioSplitter.Utility
                 }
             }
 
-            var staticMethods = methods
-                .Where(m => m.IsStatic)
-                .Where(m => m.GetCustomAttributes(attribute).Any());
+            var staticMethods = methods.Where(m => m.IsStatic);
             foreach (var method in staticMethods)
             {
                 method.Invoke(null, null);
